@@ -79,3 +79,14 @@
 - Preserved constraint: 会社のアカウント・Organizationは使わない。ソースは `2ndNuts/skill-pallet` に非公開で保存し、現在利用中のローカル署名済みアプリを置き換えない。Developer ID署名・公証なし、別Macでの初回起動・入力は未検証であることを公開資料へ記載する。
 - Date: 2026-10-24
 
+## D-009 ソースコードの公開
+
+- Previous decision: D-008では、配布専用の公開リポジトリを設け、ソース管理用の `2ndNuts/skill-pallet` は非公開で維持していた。ソースを非公開とした追加の理由は記録されていない。
+- Input: Codex for OSSへの申請にあたり、ユーザーがSkill Palletのソースリポジトリを公開することを承認した。
+- Status: user-directed change
+- User choice: `2ndNuts/skill-pallet` のソースコードを公開する。
+- License: ユーザーの承認により、ソースコードへMIT Licenseを適用する。第三者素材の既存ライセンスとクレジットは維持する。
+- Implementation: `2ndNuts/skill-pallet` でソースコードと開発資料を公開し、`2ndNuts/skill-pallet-releases` はアプリと利用資料の配布先として継続する。両リポジトリの役割をREADMEと配布手順に記載する。
+- Preserved constraint: 個人アカウント2ndNutsで管理し、現在利用中のローカル署名済みアプリを置き換えない。ブランド、Developer ID署名・公証なし、別Macでの初回起動・入力は未検証という状態は変更しない。個人のカタログ・使用履歴・署名鍵・認証情報は公開しない。
+- Date: 2026-10-24
+

@@ -4,7 +4,7 @@
 
 Codexと並べて使う、Mac用のスキルランチャー。木製のチップからスキルを選ぶと、現在のチャットの入力欄へ追記します。
 
-このリポジトリはソース管理用として非公開で管理しています。**[0.3.6 Beta 1の配布先](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.6-beta.1)** は、個人アカウントの配布専用公開リポジトリです。
+[ソースコード](https://github.com/2ndNuts/skill-pallet)はこのリポジトリで公開しています。アプリと利用資料は、配布専用の公開リポジトリ [skill-pallet-releases](https://github.com/2ndNuts/skill-pallet-releases) で提供しています。**[0.3.6 Beta 1の配布先](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.6-beta.1)**
 
 ベータ版はDeveloper ID署名・Appleの公証を受けていません。利用者による初回起動の個別許可が必要です。別のMacでの初回起動確認は未完了です。
 
@@ -70,4 +70,8 @@ python3 -m http.server 8794 --bind 127.0.0.1 --directory ui
 - [ビルドと配布](docs/DISTRIBUTION.md)
 - [第三者素材のクレジット](THIRD_PARTY_NOTICES.md)
 - [0.3.6の変更と検証状況](docs/releases/0.3.6.md)
+
+## ライセンス
+
+ソースコードは [MIT License](LICENSE) で公開しています。第三者のコード・画像・音源には、それぞれ [第三者素材のクレジット](THIRD_PARTY_NOTICES.md) に記載したライセンスが適用されます。
 

@@ -10,7 +10,7 @@ Codexと並べて使う、Mac用のスキルランチャー。木製のチップ
 
 無料で試せる未公証ベータ版です。AppleのDeveloper ID署名・公証は受けていないため、初回起動時は利用者による個別許可が必要です。別のMacでの初回起動・入力は未検証です。
 
-このリポジトリではアプリと利用資料を配布します。ソース管理用のリポジトリは非公開です。
+アプリと利用資料は [skill-pallet-releases](https://github.com/2ndNuts/skill-pallet-releases) で配布しています。ソースコードと開発資料は [skill-pallet](https://github.com/2ndNuts/skill-pallet) で公開しています。
 
 ## 対応環境
 
@@ -46,3 +46,5 @@ Codexと並べて使う、Mac用のスキルランチャー。木製のチップ
 [Issues](https://github.com/2ndNuts/skill-pallet-releases/issues)へ、アプリのバージョン、macOSのバージョン、起きた操作と表示内容をお知らせください。
 
 [変更履歴](CHANGELOG.md) · [第三者素材のクレジット](THIRD_PARTY_NOTICES.md)
+
+ソースコードは [MIT License](https://github.com/2ndNuts/skill-pallet/blob/main/LICENSE) で公開しています。第三者素材には、クレジットに記載した個別のライセンスが適用されます。
