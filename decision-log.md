@@ -69,3 +69,13 @@
 - Preserved constraint: 個人アカウント2ndNutsの非公開リポジトリとRelease下書きの状態は維持する。現在のZIPの別Macでの初回起動・入力は未検証。`release` モードの公証チェックは維持し、未公証ZIPは既存の `development` モードを使う。
 - Date: 2026-10-24
 
+## D-008 配布専用の公開リポジトリ
+
+- Previous state: ソースと開発確認用ZIPを個人アカウント2ndNutsの非公開リポジトリで管理し、配布物は下書きだった。
+- Input: 未公証ベータとして誰でもダウンロードできる形で配布する指示。
+- Status: user-directed change
+- User choice: 配布専用の公開リポジトリを作り、ソース管理用のリポジトリは非公開のまま維持する。
+- Implementation: `2ndNuts/skill-pallet-releases` に利用ガイド、ロゴ、第三者素材のライセンスを置き、`v0.3.6-beta.1` のprereleaseへアプリのZIP・チェックサム・ビルド情報を添付する。配布資料は `distribution/public/` で管理し、パッケージは個人データ・署名鍵・開発用ソースを検査してから生成する。
+- Preserved constraint: 会社のアカウント・Organizationは使わない。ソースは `2ndNuts/skill-pallet` に非公開で保存し、現在利用中のローカル署名済みアプリを置き換えない。Developer ID署名・公証なし、別Macでの初回起動・入力は未検証であることを公開資料へ記載する。
+- Date: 2026-10-24
+

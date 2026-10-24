@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 608 136" role="img" aria-label="Skill Pallet"><title>Skill Pallet</title><g transform="translate(12 13) scale(.46)"><title>Skill Pallet</title><defs>
+  <path id="chip" d="M31 101 Q24 96 34 87 L103 29 Q111 22 125 22 H218 Q234 22 222 34 L152 94 Q143 102 129 102 H36 Q33 102 31 101Z"/>
+  <clipPath id="face"><use href="#chip"/></clipPath>
+  <mask id="middle-gap" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256"><path fill="white" d="M0 0h256v256H0z"/><use href="#chip" fill="black" stroke="black" stroke-width="13" stroke-linejoin="round"/></mask>
+  <mask id="bottom-gap" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256"><path fill="white" d="M0 0h256v256H0z"/><use href="#chip" fill="black" stroke="black" stroke-width="13" stroke-linejoin="round"/><use href="#chip" transform="translate(0 51)" fill="black" stroke="black" stroke-width="13" stroke-linejoin="round"/></mask>
+</defs><g mask="url(#bottom-gap)"><g transform="translate(0 102)">
+  <use href="#chip" transform="translate(0 6)" fill="#855334"/>
+  <use href="#chip" fill="#AC794A"/>
+  <g clip-path="url(#face)"><path d="M35 105C53 81 81 81 100 59S130 23 157 12M62 112C83 88 105 85 126 61S156 28 180 13M91 112C107 94 130 86 150 66S181 31 207 15M122 114C142 95 159 88 179 67S205 41 231 25M16 94C36 75 55 68 75 44S97 20 114 10" fill="none" stroke="#89552F" stroke-width="9" opacity=".5"/>
+<path d="M49 102C71 81 93 75 112 53S137 25 155 18M103 108C124 88 145 81 165 59S191 30 215 21" fill="none" stroke="#C79B66" stroke-width="3.2" opacity=".75"/></g>
+  <path d="M42 91 111 33 Q116 29 127 29 H209 L145 85 Q139 91 127 91Z" fill="none" stroke="#C79B66" stroke-width="1.8" stroke-linejoin="round" opacity=".75"/>
+</g></g><g mask="url(#middle-gap)"><g transform="translate(0 51)">
+  <use href="#chip" transform="translate(0 6)" fill="#51362B"/>
+  <use href="#chip" fill="#78513B"/>
+  <g clip-path="url(#face)"><path d="M35 105C53 81 81 81 100 59S130 23 157 12M62 112C83 88 105 85 126 61S156 28 180 13M91 112C107 94 130 86 150 66S181 31 207 15M122 114C142 95 159 88 179 67S205 41 231 25M16 94C36 75 55 68 75 44S97 20 114 10" fill="none" stroke="#BA8B5C" stroke-width="9" opacity=".5"/>
+<path d="M49 102C71 81 93 75 112 53S137 25 155 18M103 108C124 88 145 81 165 59S191 30 215 21" fill="none" stroke="#A7764B" stroke-width="3.2" opacity=".75"/></g>
+  <path d="M42 91 111 33 Q116 29 127 29 H209 L145 85 Q139 91 127 91Z" fill="none" stroke="#A7764B" stroke-width="1.8" stroke-linejoin="round" opacity=".75"/>
+</g></g><g><g transform="translate(0 0)">
+  <use href="#chip" transform="translate(0 6)" fill="#B58A54"/>
+  <use href="#chip" fill="#EBD0A1"/>
+  <g clip-path="url(#face)"><path d="M35 105C53 81 81 81 100 59S130 23 157 12M62 112C83 88 105 85 126 61S156 28 180 13M91 112C107 94 130 86 150 66S181 31 207 15M122 114C142 95 159 88 179 67S205 41 231 25M16 94C36 75 55 68 75 44S97 20 114 10" fill="none" stroke="#B98650" stroke-width="9" opacity=".5"/>
+<path d="M49 102C71 81 93 75 112 53S137 25 155 18M103 108C124 88 145 81 165 59S191 30 215 21" fill="none" stroke="#F8E6BE" stroke-width="3.2" opacity=".75"/></g>
+  <path d="M42 91 111 33 Q116 29 127 29 H209 L145 85 Q139 91 127 91Z" fill="none" stroke="#F8E6BE" stroke-width="1.8" stroke-linejoin="round" opacity=".75"/>
+</g></g></g><g transform="translate(190 28.751) scale(0.595)"><g fill="none" stroke="#503729" stroke-width="3.4" stroke-linecap="butt" stroke-linejoin="round"><path transform="translate(0.000 0)" d="M70 27C57 15 32 15 19 27C3 42 14 57 39 63C65 69 81 80 73 97C65 116 33 121 12 102"/><path transform="translate(89.000 0)" d="M10 16V112M62 53 10 97M30 79 67 112"/><path transform="translate(163.000 0)" d="M10 53V112M12.6 32a2.6 2.6 0 1 0-5.2 0a2.6 2.6 0 1 0 5.2 0"/><path transform="translate(192.000 0)" d="M10 16V112"/><path transform="translate(220.000 0)" d="M10 16V112"/><path transform="translate(270.000 0)" d="M10 112V76H45C65 76 76 64 76 47C76 29 65 20 45 20H10"/><path transform="translate(358.000 0)" d="M12 61C24 48 45 47 57 58C63 64 64 70 64 79V112M64 79C39 78 11 83 11 100C11 118 44 122 64 102"/><path transform="translate(437.000 0)" d="M10 16V112"/><path transform="translate(465.000 0)" d="M10 16V112"/><path transform="translate(493.000 0)" d="M12 85 65 73C60 54 45 48 29 53C13 58 7 71 9 88C12 112 43 124 66 105"/><path transform="translate(572.000 0)" d="M8 53H54M27 29V95C27 111 36 119 54 110"/></g></g></svg>
