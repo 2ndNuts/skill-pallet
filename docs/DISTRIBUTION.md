@@ -15,11 +15,21 @@ bash scripts/build.sh development
 bash scripts/package.sh development
 ```
 
-生成先は `build/Skill Pallet.app` と `dist/Skill-Pallet-0.3.6-arm64-development.zip` です。開発用のアドホック署名であり、一般配布用の署名・公証は付いていません。利用中のローカル署名済みアプリと設定は置き換えません。
+生成先は `build/Skill Pallet.app` と `dist/Skill-Pallet-0.3.6-arm64-development.zip` です。アドホック署名で、Developer ID署名・Appleの公証は付いていません。利用中のローカル署名済みアプリと設定は置き換えません。
 
-## 一般向けの配布ビルド
+## 未公証版をGitHubで配布する
 
-個人名義のApple Developer Programと、そのチームの `Developer ID Application` 証明書が必要です。秘密鍵と公証の認証情報はmacOSのキーチェーンで管理します。
+Apple Developer Programへ加入せず、上記の開発版ZIPをGitHub Releaseで配布できます。利用者は、入手元とファイルを確認し、初回起動時にmacOSの「プライバシーとセキュリティ」からそのアプリを個別に許可します。Appleも未公証アプリを開くための個別許可の手順を案内しています。
+
+Releaseには、対応環境、未公証であること、[初回起動とアクセシビリティ許可の手順](INSTALL.md)、チェックサム、既知の制限を添えます。配布は開発版・ベータ版であることを明記します。管理者がアプリの実行を制限しているMacでは、利用者による許可が使えない場合があります。
+
+アドホック署名は開発元の本人確認には使えません。更新により初回起動の許可やアクセシビリティの再登録が必要になる場合があります。利用者に開発者の証明書や秘密鍵をインストールさせる方式は採用しません。
+
+現在のZIPは別のMacでの初回起動・入力が未検証です。公開前に、実際にダウンロードした未公証版でその導線を確認します。リポジトリの公開状態とReleaseの下書き状態は、配布方式とは別に管理します。
+
+## Developer ID署名・公証を付ける配布ビルド
+
+この方式には個人名義のApple Developer Programと、そのチームの `Developer ID Application` 証明書が必要です。秘密鍵と公証の認証情報はmacOSのキーチェーンで管理します。
 
 ```sh
 export SKILL_PALLET_SIGN_IDENTITY='Developer ID Application: Your Name (TEAMID)'
@@ -36,14 +46,14 @@ bash scripts/notarize.sh
 bash scripts/package.sh release
 ```
 
-公証スクリプトはビルド済みのアプリをZIPにしてAppleへ提出し、Acceptedを確認してからチケットをアプリへ添付します。配布用パッケージは署名・添付済みチケット・Gatekeeperの判定が通った場合だけ生成します。
+公証スクリプトはビルド済みのアプリをZIPにしてAppleへ提出し、Acceptedを確認してからチケットをアプリへ添付します。`release` モードのパッケージは署名・添付済みチケット・Gatekeeperの判定が通った場合だけ生成します。未公証のZIPは `development` モードで生成します。
 
 ## 配布前の確認
 
-1. 生成したZIPをGitHubから別のMacへダウンロードし、標準のGatekeeperが有効なまま初回起動できることを確認する。
+1. 生成したZIPをGitHubから別のMacへダウンロードする。未公証版は利用者による個別許可、公証付き版は通常の起動の流れを確認する。
 2. 空のカタログから、アクセシビリティ許可 → Codexへの更新依頼 → カタログ反映まで確認する。
 3. 空欄・下書きのあるチャット・チャット切り替え後の追記、成功時の使用回数保存を確認する。
-4. アプリ更新後もアクセシビリティ許可・お気に入り・履歴・音・ピンが引き継がれることを確認する。
+4. アプリ更新後のお気に入り・履歴・音・ピンの引き継ぎと、初回起動・アクセシビリティの再許可の有無を確認する。
 5. 操作音のON/OFF、音の重なり、動きを減らす設定、最小ウィンドウ幅を確認する。
 
 ローカル開発証明書からDeveloper IDへの初回移行では署名の識別子が変わるため、このMacでもアクセシビリティの再登録が必要になる場合があります。同じDeveloper IDの署名を更新後も継続します。
@@ -58,6 +68,7 @@ bash scripts/package.sh release
 
 ## 参照
 
+- [Apple: Macでアプリを安全に開く（未公証アプリの個別許可）](https://support.apple.com/ja-jp/102445)
 - [Apple: Signing Mac Software with Developer ID](https://developer.apple.com/developer-id/)
 - [Apple: Notarizing macOS software before distribution](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution)
 - [GitHub: About releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)

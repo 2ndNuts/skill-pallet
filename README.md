@@ -4,7 +4,7 @@
 
 Codexと並べて使う、Mac用のスキルランチャー。木製のチップからスキルを選ぶと、現在のチャットの入力欄へ追記します。
 
-現在は **0.3.6の開発版** です。このリポジトリは非公開で管理しています。配布用のDeveloper ID署名・Appleの公証・別のMacでの初回起動確認は未完了です。
+現在は **0.3.6の開発版** です。このリポジトリは非公開で管理しています。Developer ID署名・Appleの公証は受けていません。未公証版をZIPで配布する方式ではApple Developer Programへの加入は不要ですが、利用者による初回起動の個別許可が必要です。別のMacでの初回起動確認は未完了です。
 
 ## 機能
 
@@ -21,7 +21,7 @@ Apple Silicon搭載Mac、macOS 14以降、Codexデスクトップアプリが必
 
 ## 初めて使うとき
 
-配布用アプリが用意されたら、アプリをApplicationsフォルダへ移して開きます。
+ReleaseのZIPを展開し、アプリをApplicationsフォルダへ移して開きます。未公証版の初回起動では、[インストール手順](docs/INSTALL.md)に沿って、そのアプリを開くか利用者自身で判断します。
 
 1. macOSの「プライバシーとセキュリティ → アクセシビリティ」でSkill Palletを許可します。
 2. Codexを開き、Skill Palletの更新ボタンからカタログ作成を依頼します。入力欄へ追加された依頼文を確認して送信します。
@@ -63,6 +63,7 @@ python3 -m http.server 8794 --bind 127.0.0.1 --directory ui
 ## 関連資料
 
 - [カタログの形式](docs/CATALOG.md)
+- [未公証版のインストール](docs/INSTALL.md)
 - [ビルドと配布](docs/DISTRIBUTION.md)
 - [第三者素材のクレジット](THIRD_PARTY_NOTICES.md)
 - [0.3.6の変更と検証状況](docs/releases/0.3.6.md)

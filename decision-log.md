@@ -58,3 +58,14 @@
 - Validation: 38件のユニットテスト、実際のThree.jsシーンを使う描画計算テスト、接触イベントに同期した音声の解析で検証。描画計算テストはGPUを代替しているため、実機の見え方とは区別する。
 - Date: 2026-10-24
 
+## D-007 GitHub配布とApple Developer Programの要否
+
+- Previous judgment: 一般向けのGitHub配布にも、Apple Developer Programへの加入とDeveloper ID署名・公証が必要と説明していた。
+- Reason: 通常のGatekeeper起動に必要な署名・公証と、配布自体の可否を同じ条件として扱っていた。
+- Input: Apple Developer Programへ加入せずGitHubから配布する方法についての質問。
+- Status: revised by verified evidence
+- Evidence: Appleの「Macでアプリを安全に開く」（https://support.apple.com/ja-jp/102445）は、未公証アプリを利用者が「プライバシーとセキュリティ」から個別に許可して開く手順を案内している。
+- Revision: 加入はGitHub配布自体の必須条件ではない。未公証のZIPを開発版・ベータ版として配布し、初回起動の個別許可とアクセシビリティ許可を案内できる。Developer ID署名・公証を付ける方式には加入が必要。文書では両方式を分ける。
+- Preserved constraint: 個人アカウント2ndNutsの非公開リポジトリとRelease下書きの状態は維持する。現在のZIPの別Macでの初回起動・入力は未検証。`release` モードの公証チェックは維持し、未公証ZIPは既存の `development` モードを使う。
+- Date: 2026-10-24
+
