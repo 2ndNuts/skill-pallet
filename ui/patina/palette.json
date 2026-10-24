@@ -1,0 +1,51 @@
+{
+  "scope": "per-skill",
+  "stages": [
+    {
+      "stage": 1,
+      "label": "素の木肌",
+      "color": "#EBD0A1",
+      "ink": "#24170F",
+      "minimum": 0,
+      "maximum": 4
+    },
+    {
+      "stage": 2,
+      "label": "少し馴染む",
+      "color": "#D4AD78",
+      "ink": "#24170F",
+      "minimum": 5,
+      "maximum": 10
+    },
+    {
+      "stage": 3,
+      "label": "飴色",
+      "color": "#AC794A",
+      "ink": "#24170F",
+      "minimum": 11,
+      "maximum": 15
+    },
+    {
+      "stage": 4,
+      "label": "深い飴色",
+      "color": "#93623F",
+      "ink": "#FFF2D9",
+      "minimum": 16,
+      "maximum": 20
+    },
+    {
+      "stage": 5,
+      "label": "深い木肌",
+      "color": "#78513B",
+      "ink": "#FFF2D9",
+      "minimum": 21,
+      "maximum": null
+    }
+  ],
+  "status": "implemented",
+  "window": {
+    "type": "rolling",
+    "days": 30
+  },
+  "countedEvent": "verified-insertion-success"
+}

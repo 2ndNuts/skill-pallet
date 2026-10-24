@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleIdentifier</key><string>com.kaido.skillpalette</string>
+  <key>CFBundleName</key><string>Skill Pallet</string>
+  <key>CFBundleDisplayName</key><string>Skill Pallet</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
+  <key>CFBundleExecutable</key><string>SkillPalette</string>
+  <key>CFBundleVersion</key><string>20</string>
+  <key>CFBundleShortVersionString</key><string>0.3.6</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>LSMinimumSystemVersion</key><string>14.0</string>
+  <key>LSUIElement</key><false/>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>NSAccessibilityUsageDescription</key><string>選んだスキルを、Codexで現在開いているチャットの入力欄に追記します。</string>
+</dict></plist>

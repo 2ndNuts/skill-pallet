@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 232" color="#503729" role="img" aria-label="Skill Pallet"><title>Skill Pallet</title><defs>
+  <path id="chip" d="M31 101 Q24 96 34 87 L103 29 Q111 22 125 22 H218 Q234 22 222 34 L152 94 Q143 102 129 102 H36 Q33 102 31 101Z"/>
+  <clipPath id="face"><use href="#chip"/></clipPath>
+  <mask id="middle-gap" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256"><path fill="white" d="M0 0h256v256H0z"/><use href="#chip" fill="black" stroke="black" stroke-width="13" stroke-linejoin="round"/></mask>
+  <mask id="bottom-gap" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256"><path fill="white" d="M0 0h256v256H0z"/><use href="#chip" fill="black" stroke="black" stroke-width="13" stroke-linejoin="round"/><use href="#chip" transform="translate(0 51)" fill="black" stroke="black" stroke-width="13" stroke-linejoin="round"/></mask>
+</defs>
+<g fill="currentColor"><g mask="url(#bottom-gap)"><use href="#chip" transform="translate(0 108)"/></g><g mask="url(#middle-gap)"><use href="#chip" transform="translate(0 57)"/></g><use href="#chip" transform="translate(0 3)"/></g></svg>

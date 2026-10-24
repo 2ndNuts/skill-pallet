@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Skill Pallet</title><meta name="application-name" content="Skill Pallet"><meta name="theme-color" content="#E0BC7D"><link rel="icon" type="image/svg+xml" href="../brand/assets/mark-mono.svg"><link rel="apple-touch-icon" href="../brand/assets/app-icon.png"><link rel="stylesheet" href="style.css"></head>
+<body><main class="workspace">
+  <header class="page-heading"><h1><a href="../brand/" aria-label="Skill Palletのロゴを見る"><img class="brand-wordmark" src="../brand/assets/lockup.svg" alt="Skill Pallet" width="608" height="136"></a></h1><p>木の道具箱と、浅い皿型のチップ。</p></header>
+  <div class="workbench">
+    <div id="stage-frame"><section class="palette" aria-label="Skill Pallet">
+      <div class="titlebar"><span><span class="window-controls" aria-hidden="true">● ● ●</span><span class="native-tools native-only"><button id="native-refresh" type="button" aria-label="Codexにカタログ更新を依頼" title="Codexにカタログ更新を依頼">↻</button><select id="native-format" aria-label="入力形式"><option value="slash">/</option><option value="dollar">$</option><option value="reference">参照</option></select><button id="native-sound" type="button" aria-label="操作音" aria-pressed="false" title="操作音">♪</button><button id="pin" class="pin-control" type="button" aria-label="最前面に固定" aria-pressed="false" title="最前面に固定"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 2 6 6M7 3l-3 4-2 1 6 6 1-2 4-3M6 10l-4 4"/></svg></button></span></span><strong><img class="titlebar-brand" src="../brand/assets/wordmark-small.svg" alt="Skill Pallet" width="639" height="132"></strong><span class="native-only"><button id="native-permission" type="button" hidden>入力を有効にする</button></span></div>
+      <form class="search-wrap" role="search"><label for="search" class="sr-only">スキルを検索</label><div class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="スキル名・やりたいことを検索" autocomplete="off"><kbd>⌘ F</kbd></div></form>
+      <nav id="genres" class="genres" aria-label="ジャンル"></nav>
+      <div class="grid-toolbar"><span id="count" role="status"></span><div><button id="favorites" class="mini" aria-pressed="false" aria-label="お気に入りだけ表示">☆</button><label class="sr-only" for="sort">並び順</label><select id="sort"><option value="frequent">よく使う順</option><option value="name">名前順</option></select></div></div>
+      <div class="grid-stage"><canvas id="wood" aria-hidden="true"></canvas><div id="viewport" class="grid-viewport" role="region" aria-label="スキル一覧" tabindex="0"><div id="grid" class="chip-grid"></div></div><div id="empty" hidden><p id="empty-message">該当するスキルがありません</p><button id="catalog-setup" type="button" hidden>Codexにカタログ作成を依頼</button></div></div>
+      <section class="inspector" aria-live="polite"><div class="detail-heading"><h2 id="detail-name">スキルを選ぶ</h2><span id="detail-category"></span></div><p id="detail-summary">チップにマウスを乗せると、ここにも説明が出ます。</p><div class="inspector-footer"><p id="usage-detail"></p></div></section>
+    </section></div>
+    <aside class="design-controls" aria-label="文字と色の調整">
+      <h2>名前を読みやすく</h2><p class="lead">短い名前は大きく。長い名前は、語の区切りを保って並べます。</p>
+      <div id="rules" class="rules"></div>
+      <p class="control-note">文字数はハイフンを含む全文。区切りはハイフンで分かれた語の数です。指定pxを上限に実際の横幅を測り、0.5pxずつ調整します。長い連続語は個別の位置で改行し、名前は全文を表示します。</p>
+      <div class="type-readout"><span>いま指している名前</span><strong id="type-name">—</strong><output id="type-details">チップにマウスを乗せて確認</output></div>
+      <fieldset class="hover-options"><legend>ホバーの色</legend><div class="swatches"><span><i style="background:#c8ef78"></i>音</span><span><i style="background:#79b7ff"></i>映像</span><span><i style="background:#7ecefd"></i>その他</span></div><p class="control-note">用途の色は、木の色を保ったまま縁のラインで表示します。</p><p class="control-note">説明は約180ms止まると表示。下部の概要はすぐに切り替わります。</p></fieldset>
+      <div class="selection-preview"><span>選んだスキル</span><output id="invocation">チップを押して確認</output><label><input id="sound" type="checkbox">操作音</label></div>
+      <section class="usage-controls" aria-label="使用回数と木の色"><h3>直近30日の木の色</h3><div id="usage-legend" class="usage-legend"></div><p id="usage-mode-note" class="control-note"></p><p id="usage-save-state" role="status" class="control-note" hidden></p></section>
+      <button id="reset" class="reset">文字の初期案に戻す</button>
+      <p id="ready" class="control-note" role="status">木目を読み込んでいます。</p><p class="control-note">スタックを押すと関連スキルを展開します。検索中は一致したスキルを直接表示します。</p>
+    </aside>
+  </div>
+</main><div id="tooltip" role="tooltip" hidden><p></p></div><p id="action-status" role="status" hidden></p><script src="bundle.js" defer></script></body></html>

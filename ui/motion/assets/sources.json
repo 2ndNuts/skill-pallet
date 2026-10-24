@@ -1,0 +1,28 @@
+{
+  "source": "https://polyhaven.com/a/wood_table_001",
+  "license": "CC0",
+  "authors": [
+    "Dimitrios Savva",
+    "Rico Cilliers"
+  ],
+  "maps": [
+    {
+      "file": "wood-diff.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_001/wood_table_001_diff_1k.jpg",
+      "bytes": 215573,
+      "sha256": "460dd08d240f4a1f02982415048c3c5c200f385db212da18dc7e2df68bf4d0be"
+    },
+    {
+      "file": "wood-nor_gl.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_001/wood_table_001_nor_gl_1k.jpg",
+      "bytes": 51927,
+      "sha256": "9bf7ddf5721e225c20290f1772ae37f9bdfd49658f6d458259eb794e2149d3cf"
+    },
+    {
+      "file": "wood-rough.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_001/wood_table_001_rough_1k.jpg",
+      "bytes": 237261,
+      "sha256": "a2ca9ae89dfe7b8e2e5e92f0aa43467845417de8a50205b5852ef0d57c7624f9"
+    }
+  ]
+}

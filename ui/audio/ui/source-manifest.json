@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "recordings": [
+    {
+      "id": "hover-startup",
+      "title": "wooden object set on table 4",
+      "author": "youandbiscuitme",
+      "page_url": "https://freesound.org/people/youandbiscuitme/sounds/258245/",
+      "license": "CC BY 3.0",
+      "license_url": "https://creativecommons.org/licenses/by/3.0/"
+    },
+    {
+      "id": "success",
+      "title": "Wood Knock",
+      "author": "Mrguff",
+      "page_url": "https://freesound.org/people/Mrguff/sounds/369710/",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "title": "Rolling a Rectangular Cube",
+      "author": "WiseOldHooter",
+      "page_url": "https://freesound.org/people/WiseOldHooter/sounds/725015/",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "id": "scroll"
+    }
+  ],
+  "files": [
+    {
+      "file": "wood-01.wav",
+      "sha256": "bc1077597c9479200287832265d72b282d274a3e0a9ca3ef8484daebf8dea85e",
+      "sourceTrimSeconds": [
+        0.165,
+        0.565
+      ],
+      "aliasOf": null,
+      "processing": [
+        "mono average",
+        "70Hz high-pass 2nd order",
+        "7kHz low-pass 2nd order",
+        "1ms boundary fade-in",
+        "5ms boundary fade-out after natural decay",
+        "peak gain -22dBFS"
+      ],
+      "recording": "hover-startup"
+    },
+    {
+      "file": "wood-02.wav",
+      "sha256": "bc1077597c9479200287832265d72b282d274a3e0a9ca3ef8484daebf8dea85e",
+      "sourceTrimSeconds": [
+        0.165,
+        0.565
+      ],
+      "aliasOf": "wood-01.wav",
+      "processing": [
+        "mono average",
+        "70Hz high-pass 2nd order",
+        "7kHz low-pass 2nd order",
+        "1ms boundary fade-in",
+        "5ms boundary fade-out after natural decay",
+        "peak gain -22dBFS"
+      ],
+      "recording": "hover-startup"
+    },
+    {
+      "file": "wood-03.wav",
+      "sha256": "bc1077597c9479200287832265d72b282d274a3e0a9ca3ef8484daebf8dea85e",
+      "sourceTrimSeconds": [
+        0.165,
+        0.565
+      ],
+      "aliasOf": "wood-01.wav",
+      "processing": [
+        "mono average",
+        "70Hz high-pass 2nd order",
+        "7kHz low-pass 2nd order",
+        "1ms boundary fade-in",
+        "5ms boundary fade-out after natural decay",
+        "peak gain -22dBFS"
+      ],
+      "recording": "hover-startup"
+    },
+    {
+      "file": "wood-04.wav",
+      "sha256": "bc1077597c9479200287832265d72b282d274a3e0a9ca3ef8484daebf8dea85e",
+      "sourceTrimSeconds": [
+        0.165,
+        0.565
+      ],
+      "aliasOf": "wood-01.wav",
+      "processing": [
+        "mono average",
+        "70Hz high-pass 2nd order",
+        "7kHz low-pass 2nd order",
+        "1ms boundary fade-in",
+        "5ms boundary fade-out after natural decay",
+        "peak gain -22dBFS"
+      ],
+      "recording": "hover-startup"
+    },
+    {
+      "file": "../success-click.wav",
+      "recording": "success",
+      "sha256": "b5151a23d210f20d9f2e3d417ed77d057808508a9d69ceff54479b315039b9e3",
+      "sourceTrimSeconds": [
+        0,
+        0.4
+      ],
+      "processing": [
+        "mono average",
+        "70Hz high-pass 2nd order",
+        "7kHz low-pass 2nd order",
+        "1ms boundary fade-in",
+        "5ms boundary fade-out",
+        "peak gain -22dBFS"
+      ]
+    },
+    {
+      "file": "scroll-01.wav",
+      "recording": "scroll",
+      "sha256": "c4327dc3248e7adedd91cd79621adc4b9e98602cabe777fe18586f791d85d33c",
+      "sourceTrimSeconds": [
+        0.248,
+        0.468
+      ],
+      "durationSeconds": 0.22,
+      "processing": [
+        "mono average",
+        "80Hz high-pass 2nd order",
+        "5.5kHz low-pass 2nd order",
+        "1ms boundary fade-in",
+        "5ms boundary fade-out after natural decay",
+        "peak gain -22dBFS"
+      ],
+      "levelMatching": {
+        "file": "kit/scroll-01.wav",
+        "gain_db": 0,
+        "before": {
+          "rms_dbfs": -44.97187652366436,
+          "padded_lufs": -45.91484776785256,
+          "peak_dbfs": -21.99999763333716
+        },
+        "after": {
+          "rms_dbfs": -44.97187652366436,
+          "padded_lufs": -45.91484776785256,
+          "peak_dbfs": -21.99999763333716
+        },
+        "method": "Attenuate only. Match to scroll-01 using the stricter of RMS and padded BS.1770. Do not raise scroll-01."
+      },
+      "trimRealness": 0.805,
+      "trimRealnessVerdict": "real or pro-produced"
+    },
+    {
+      "file": "scroll-02.wav",
+      "recording": "scroll",
+      "sha256": "21f215edd253e36187f99010eb415b9f34f43eb99666ed06484389f8eac5bbde",
+      "sourceTrimSeconds": [
+        6.239,
+        6.459
+      ],
+      "durationSeconds": 0.22,
+      "processing": [
+        "mono average",
+        "80Hz high-pass 2nd order",
+        "5.5kHz low-pass 2nd order",
+        "1ms boundary fade-in",
+        "5ms boundary fade-out after natural decay",
+        "peak gain -22dBFS"
+      ],
+      "levelMatching": {
+        "file": "kit/scroll-02.wav",
+        "gain_db": -3.3859015551616096,
+        "before": {
+          "rms_dbfs": -42.10265231073613,
+          "padded_lufs": -42.52894621269095,
+          "peak_dbfs": -22.00001066874472
+        },
+        "after": {
+          "rms_dbfs": -45.48855386589775,
+          "padded_lufs": -45.91484776785253,
+          "peak_dbfs": -25.385912223906328
+        },
+        "method": "Attenuate only. Match to scroll-01 using the stricter of RMS and padded BS.1770. Do not raise scroll-01."
+      },
+      "trimRealness": 0.819,
+      "trimRealnessVerdict": "real or pro-produced"
+    },
+    {
+      "file": "scroll-03.wav",
+      "recording": "scroll",
+      "sha256": "7fb9925a0861f9e21571496751f2413d834e6ad48776d2e4b71233795c298148",
+      "sourceTrimSeconds": [
+        7.178,
+        7.398
+      ],
+      "durationSeconds": 0.22,
+      "processing": [
+        "mono average",
+        "80Hz high-pass 2nd order",
+        "5.5kHz low-pass 2nd order",
+        "1ms boundary fade-in",
+        "5ms boundary fade-out after natural decay",
+        "peak gain -22dBFS"
+      ],
+      "levelMatching": {
+        "file": "kit/scroll-03.wav",
+        "gain_db": -9.971981201156382,
+        "before": {
+          "rms_dbfs": -34.99989532250798,
+          "padded_lufs": -38.7450150581352,
+          "peak_dbfs": -21.99999763333716
+        },
+        "after": {
+          "rms_dbfs": -44.97187652366436,
+          "padded_lufs": -48.716996259291435,
+          "peak_dbfs": -31.97197883449354
+        },
+        "method": "Attenuate only. Match to scroll-01 using the stricter of RMS and padded BS.1770. Do not raise scroll-01."
+      },
+      "trimRealness": 0.913,
+      "trimRealnessVerdict": "real or pro-produced"
+    }
+  ]
+}
