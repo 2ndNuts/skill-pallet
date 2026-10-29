@@ -6,8 +6,8 @@
 
 ## 1. ダウンロード
 
-1. [GitHubのリリースページ](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.16-beta.1)を開きます。
-2. Assetsから `Skill-Pallet-0.3.16-beta.1-arm64.zip` をダウンロードします。
+1. [GitHubのリリースページ](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.17-beta.1)を開きます。
+2. Assetsから `Skill-Pallet-0.3.17-beta.1-arm64.zip` をダウンロードします。
 3. ZIPを展開し、`Skill Pallet.app` を「アプリケーション」フォルダへ移します。
 
 ZIPにはアプリ、利用手順、クレジットが入っています。個人のスキルカタログや使用履歴は同梱していません。

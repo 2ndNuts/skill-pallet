@@ -1,20 +1,18 @@
 # 未公証版のインストール
 
-公開ベータ版は [2ndNuts/skill-pallet-releases](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.16-beta.1) から入手できます。利用者向けの手順は[公開ガイド](https://github.com/2ndNuts/skill-pallet-releases/blob/main/INSTALL.md)を参照してください。
+公開ベータ版は [2ndNuts/skill-pallet-releases](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.17-beta.1) から入手できます。利用者向けの手順は[公開ガイド](https://github.com/2ndNuts/skill-pallet-releases/blob/main/INSTALL.md)を参照してください。
 
-以下は、非公開の開発スナップショット `0.3.16-dev.1` を扱う場合の手順です。
+ソースから開発版を作る場合は、[ビルドと配布](DISTRIBUTION.md)を参照してください。以下は公開ベータ版の利用手順です。
 
 対象：Apple Silicon搭載Mac、macOS 14以降、Codexデスクトップアプリ。
 
-現在の開発版はDeveloper ID署名・Appleの公証を受けていません。入手元を信頼でき、ファイルが改ざんされていないことを確認したうえで、そのアプリを開くか判断してください。別のMacでの初回起動・入力はまだ検証していません。
+現在のベータ版はDeveloper ID署名・Appleの公証を受けていません。入手元を信頼でき、ファイルが改ざんされていないことを確認したうえで、そのアプリを開くか判断してください。別のMacでの初回起動・入力はまだ検証していません。
 
 ## ダウンロード
 
-1. `2ndNuts/skill-pallet` のReleaseから `Skill-Pallet-0.3.16-arm64-development.zip` と `SHA256SUMS.txt` を入手します。
+1. `2ndNuts/skill-pallet-releases` のReleaseから `Skill-Pallet-0.3.17-beta.1-arm64.zip` と `SHA256SUMS.txt` を入手します。
 2. 必要に応じてZIPのSHA-256を添付のチェックサムと照合します。
 3. ZIPを展開し、`Skill Pallet.app` を「アプリケーション」フォルダへ移します。
-
-現在のリポジトリは非公開で、Releaseは下書きです。ダウンロードできる範囲はリポジトリと下書きへのアクセス権に従います。
 
 ## 初回に開く
 

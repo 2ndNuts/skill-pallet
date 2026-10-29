@@ -4,7 +4,7 @@
 
 Codexと並べて使う、Mac用のスキルランチャー。木製のチップからスキルを選ぶと、現在のチャットの入力欄へ追記します。
 
-[ソースコード](https://github.com/2ndNuts/skill-pallet)はこのリポジトリで公開しています。アプリと利用資料は、配布専用の公開リポジトリ [skill-pallet-releases](https://github.com/2ndNuts/skill-pallet-releases) で提供しています。**[0.3.16 Beta 1の配布先](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.16-beta.1)**
+[ソースコード](https://github.com/2ndNuts/skill-pallet)はこのリポジトリで公開しています。アプリと利用資料は、配布専用の公開リポジトリ [skill-pallet-releases](https://github.com/2ndNuts/skill-pallet-releases) で提供しています。**[0.3.17 Beta 1の配布先](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.17-beta.1)**
 
 ベータ版はDeveloper ID署名・Appleの公証を受けていません。利用者による初回起動の個別許可が必要です。別のMacでの初回起動確認は未完了です。
 
@@ -71,6 +71,7 @@ python3 -m http.server 8794 --bind 127.0.0.1 --directory ui
 - [公開用の利用ガイド](distribution/public/README.md)
 - [ビルドと配布](docs/DISTRIBUTION.md)
 - [第三者素材のクレジット](THIRD_PARTY_NOTICES.md)
+- [0.3.17の横フリック・連続操作の改善](docs/releases/0.3.17.md)
 - [0.3.16のトレー切り替え](docs/releases/0.3.16.md)
 - [0.3.15の横フリック](docs/releases/0.3.15.md)
 - [0.3.14のジャンル7色](docs/releases/0.3.14.md)

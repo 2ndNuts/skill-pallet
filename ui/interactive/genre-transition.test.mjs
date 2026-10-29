@@ -45,12 +45,13 @@ test('reduced motion and cancellation clean up immediately without replaying pen
   assert.equal(t.active,false);assert.equal(t.target,'video');assert.equal(events.filter(e=>e[0]==='start').length,1);
   assert.equal(events.at(-1)[1].cancelled,true);
 });
-test('fractional frame clocks land at 200ms and a suspended frame drops the old pending destination',()=>{
+test('fractional clocks land at 200ms and a slow visible frame preserves the latest pending destination',()=>{
   let clock=10000.12345;const events=[];
   const t=createGenreTransition({order:['all','audio','video'],now:()=>clock,onStart:e=>events.push(e.to)});
   t.request('audio');t.tick(clock+199.99999999);assert.equal(t.active,false);
-  clock+=250;t.request('video');t.request('all');t.tick(clock+1000);
-  assert.equal(t.active,false);assert.equal(t.target,'video');assert.deepEqual(events,['audio','video']);
+  clock+=250;t.request('video');t.request('all');clock+=1000;t.tick(clock);
+  assert.equal(t.active,true);assert.equal(t.target,'all');assert.deepEqual(events,['audio','video','all']);
+  clock+=200;t.tick(clock);assert.equal(t.active,false);
 });
 test('both travelling trays have individual contacts; only visible contacts enter the shared sound cadence',()=>{
   const size=102.5,items=Array.from({length:16},(_,i)=>({key:`skill-${i}`,x:i%4*(size+8),y:Math.floor(i/4)*(size+8),size,stack:i===4}));

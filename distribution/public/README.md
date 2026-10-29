@@ -8,7 +8,7 @@ https://github.com/user-attachments/assets/7886f68e-732b-4ff4-ad9a-5c195e51803d
 
 効果音と木目テクスチャのクレジットは[第三者素材](THIRD_PARTY_NOTICES.md)に記載しています。
 
-**[0.3.16 Beta 1をダウンロード](https://github.com/2ndNuts/skill-pallet-releases/releases/download/v0.3.16-beta.1/Skill-Pallet-0.3.16-beta.1-arm64.zip)** · [リリース情報](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.16-beta.1) · [インストール手順](INSTALL.md)
+**[0.3.17 Beta 1をダウンロード](https://github.com/2ndNuts/skill-pallet-releases/releases/download/v0.3.17-beta.1/Skill-Pallet-0.3.17-beta.1-arm64.zip)** · [リリース情報](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.17-beta.1) · [インストール手順](INSTALL.md)
 
 ## ベータ版について
 

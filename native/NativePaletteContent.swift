@@ -16,6 +16,9 @@ import os
     private var windowMotion: WindowMotionRelay?
     private var pendingMotion: WindowMotionPacket?
     private var motionRequest: UUID?
+    private var wheelMonitor: Any?
+    private var wheelSequence = 0
+    private var wheelSample = 0
     private let motionLog = Logger(subsystem: "com.kaido.skillpalette", category: "WindowMotion")
 
     init?(model: PaletteModel) {
@@ -36,6 +39,44 @@ import os
             self?.sounds.setVolume(volume)
         }
         webView.loadFileURL(entry, allowingReadAccessTo: root)
+        wheelMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            self?.observeWheelGesture(event)
+            return event
+        }
+    }
+
+    deinit { if let wheelMonitor { NSEvent.removeMonitor(wheelMonitor) } }
+
+    private func observeWheelGesture(_ event: NSEvent) {
+        guard isReady, let window = webView.window, event.window === window,
+              webView.url?.standardizedFileURL == entry else { return }
+        let began = event.phase.contains(.began)
+        let ended = event.phase.contains(.ended) || event.phase.contains(.cancelled)
+        guard window.isVisible || ended else { return }
+        if began { wheelSequence += 1 }
+        wheelSample += 1
+        let point = webView.convert(event.locationInWindow, from: nil)
+        let x = point.x - webView.bounds.minX
+        let y = webView.isFlipped ? point.y - webView.bounds.minY : webView.bounds.maxY - point.y
+        let legacy = event.phase.isEmpty && event.momentumPhase.isEmpty
+        let kind = began ? "begin" : ended ? "end" : legacy ? "legacy" : "change"
+        let precise = event.hasPreciseScrollingDeltas
+        let gesture: [String: Any] = [
+            "sequence": wheelSequence, "sample": wheelSample, "kind": kind,
+            "at": event.timestamp * 1000,
+            "deltaX": -(precise ? event.scrollingDeltaX : event.deltaX),
+            "deltaY": -(precise ? event.scrollingDeltaY : event.deltaY),
+            "deltaMode": precise ? 0 : 1, "x": x, "y": y,
+            "modified": !event.modifierFlags.intersection([.control, .command]).isEmpty,
+            "buttons": NSEvent.pressedMouseButtons
+        ]
+        // Phase and movement stay in one ordered channel. Native uptime never
+        // needs to be converted into the page's clock, including after sleep.
+        webView.callAsyncJavaScript("""
+            if ((gesture.kind !== 'begin' && gesture.kind !== 'legacy') || document.elementFromPoint(gesture.x, gesture.y)?.closest('.grid-stage')) {
+                window.dispatchEvent(new CustomEvent('skill-pallet-native-wheel', {detail: gesture}));
+            }
+            """, arguments: ["gesture": gesture], in: nil, in: .page) { _ in }
     }
 
     func focusSearch() {

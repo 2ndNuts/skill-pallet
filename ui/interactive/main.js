@@ -156,8 +156,9 @@ function applyType(button,entry,cellWidth){
 function syncLayout(){
   if(!wood)return;const available=stage.parentElement.getBoundingClientRect().width,baseHeight=runtime.native?665:690;scale=Math.min(1,available/460,runtime.native?innerHeight/baseHeight:1);const height=runtime.native?innerHeight/scale:baseHeight;palette.style.setProperty('--scale',String(scale));palette.style.height=`${height}px`;stage.style.width=`${460*scale}px`;stage.style.height=`${height*scale}px`;document.documentElement.style.setProperty('--scaled-stage-height',`${height*scale}px`);
   const gridRect=grid.getBoundingClientRect(),items=[];
-  for(const button of grid.querySelectorAll('.skill-chip')){
-    const rect=button.getBoundingClientRect(),entry=entryFor(button),size=rect.width/scale,x=(rect.left-gridRect.left)/scale,y=(rect.top-gridRect.top)/scale;
+  const measured=[...grid.querySelectorAll('.skill-chip')].map(button=>({button,rect:button.getBoundingClientRect()}));
+  for(const {button,rect}of measured){
+    const entry=entryFor(button),size=rect.width/scale,x=(rect.left-gridRect.left)/scale,y=(rect.top-gridRect.top)/scale;
     applyType(button,entry,size);
     applyPatina(button,entry);
     const spawn=layoutAction?.opening&&button.dataset.parentStack===layoutAction.family&&y<viewport.scrollTop+viewport.clientHeight+20?layoutAction.spawn:null;
@@ -286,6 +287,10 @@ window.addEventListener('skill-pallet-window-motion',event=>{
     clearTimeout(hoverSoundTimer);hideTip();const hovered=grid.querySelector('.is-hover');if(hovered)leave(hovered);
   }
 });
+window.addEventListener('skill-pallet-native-wheel',event=>{
+  if(!genreSwipe)return;
+  if(!document.hidden||event.detail?.kind==='end')genreSwipe.nativeWheel(event.detail);
+});
 // Catalog update intentionally passes keyboard focus to Codex while the palette
 // remains visible. A focus change alone must not cancel its requested arrival.
 window.addEventListener('blur',()=>{clearTimeout(hoverSoundTimer);hideTip();});
@@ -326,7 +331,7 @@ try{
     }
   });
   genreSwipe=createGenreSwipe(trayStage,{
-    getScale:()=>scale,
+    native:runtime.native,getScale:()=>scale,
     onStart(){inertia?.stop();handoffToScroll();uiSound.beginScroll(performance.now());},
     onEnd(){uiSound.endScroll(performance.now());restoreHover();},
     onSwitch(direction){

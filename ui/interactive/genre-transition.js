@@ -40,7 +40,7 @@ export function createGenreTransition({initial='all',order=[],now=()=>performanc
       const elapsed=Math.max(0,at-flight.start),stale=elapsed>MOTION.frameGap+MOTION.genre.duration,instant=reduced()||stale;
       const done=elapsed>=MOTION.genre.duration-.001;
       onFrame({...flight,elapsed:instant||done?MOTION.genre.duration:elapsed,at,instant});
-      if(instant||done)finish(instant,stale);
+      if(instant||done)finish(instant);
     },
     cancel(){pending=null;if(flight)finish(true,true);},
     get active(){return flight!==null;},
