@@ -18,6 +18,7 @@ cp "$project_root/ui/brand/assets/app-icon.icns" "$app/Contents/Resources/AppIco
 cp "$project_root/ui/brand/assets/status-icon.pdf" "$app/Contents/Resources/StatusIcon.pdf"
 cp "$project_root/ui/brand/assets/wordmark.png" "$app/Contents/Resources/Wordmark.png"
 cp "$project_root/THIRD_PARTY_NOTICES.md" "$app/Contents/Resources/THIRD_PARTY_NOTICES.md"
+cp "$project_root/LICENSE" "$app/Contents/Resources/LICENSE"
 for name in index.html style.css bundle.js; do cp "$project_root/ui/interactive/$name" "$ui/interactive/"; done
 for name in wood-diff.jpg wood-nor_gl.jpg wood-rough.jpg; do cp "$project_root/ui/motion/assets/$name" "$ui/motion/assets/"; done
 cp "$project_root/ui/audio/success-click.wav" "$ui/audio/"

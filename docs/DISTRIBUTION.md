@@ -2,7 +2,7 @@
 
 ## 現在の状態
 
-0.3.6は開発版です。Apple Silicon・macOS 14以降を対象とし、開発環境で起動・入力・保存・3D UIを確認しています。Developer ID署名・Appleの公証・別のMacでの初回起動確認は未完了です。
+0.3.16は未公証ベータ版です。Apple Silicon・macOS 14以降を対象とし、開発環境で起動・入力・保存・3D UIを確認しています。Developer ID署名・Appleの公証・別のMacでの初回起動確認は未完了です。
 
 ソースコードと開発資料は個人アカウントの公開リポジトリ [2ndNuts/skill-pallet](https://github.com/2ndNuts/skill-pallet) で管理します。公開ベータのアプリと利用資料は、配布専用の公開リポジトリ [2ndNuts/skill-pallet-releases](https://github.com/2ndNuts/skill-pallet-releases) で配布します。
 
@@ -15,19 +15,19 @@ bash scripts/build.sh development
 bash scripts/package.sh development
 ```
 
-生成先は `build/Skill Pallet.app` と `dist/Skill-Pallet-0.3.6-arm64-development.zip` です。アドホック署名で、Developer ID署名・Appleの公証は付いていません。利用中のローカル署名済みアプリと設定は置き換えません。
+生成先は `build/Skill Pallet.app` と `dist/Skill-Pallet-0.3.16-arm64-development.zip` です。アドホック署名で、Developer ID署名・Appleの公証は付いていません。利用中のローカル署名済みアプリと設定は置き換えません。
 
 ## 未公証版をGitHubで配布する
 
 Apple Developer Programへ加入せず、未公証版のZIPをGitHub Releaseで配布できます。利用者は、入手元とファイルを確認し、初回起動時にmacOSの「プライバシーとセキュリティ」からそのアプリを個別に許可します。Appleも未公証アプリを開くための個別許可の手順を案内しています。
 
-0.3.6 Beta 1のパッケージは次のコマンドで生成します。
+0.3.16 Beta 1のパッケージは次のコマンドで生成します。
 
 ```sh
-python3 scripts/package-beta.py 0.3.6-beta.1
+python3 scripts/package-beta.py 0.3.16-beta.1
 ```
 
-生成先は `dist/beta/0.3.6-beta.1/` です。ZIP、`SHA256SUMS.txt`、`BUILD-INFO.json` を配布専用の公開リポジトリへ添付します。`distribution/public/` のガイド・クレジットをZIPにも同梱します。既存のリリース出力を上書きせず、バージョンと手順書が一致しない場合もパッケージを止めます。
+生成先は `dist/beta/0.3.16-beta.1/` です。ZIP、`SHA256SUMS.txt`、`BUILD-INFO.json` を配布専用の公開リポジトリへ添付します。`distribution/public/` のガイド・クレジットをZIPにも同梱します。既存のリリース出力を上書きせず、バージョンと手順書が一致しない場合もパッケージを止めます。
 
 Releaseには、対応環境、未公証であること、[初回起動とアクセシビリティ許可の手順](INSTALL.md)、チェックサム、既知の制限を添えます。配布は開発版・ベータ版であることを明記します。管理者がアプリの実行を制限しているMacでは、利用者による許可が使えない場合があります。
 

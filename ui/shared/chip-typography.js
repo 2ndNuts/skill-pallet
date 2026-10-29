@@ -1,3 +1,5 @@
+import {skillGenreStyle} from './genre-palette.js';
+
 export const FONT='-apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif';
 export const DEFAULT_RULES=[
   {id:'short',label:'10文字・2区切りまで',maxChars:10,maxChunks:2,size:22,weight:650,maxLines:2},
@@ -62,9 +64,4 @@ export function planLabel(name,{width=84.5,height=80,rules=DEFAULT_RULES}={}){
   const size=13,leading=15,lines=tokens.flatMap(token=>splitLongToken(token,size,rule.weight,width));
   return{...metrics,rule:rule.id,size,weight:rule.weight,leading,lines,widths:lines.map(s=>widthOf(s,size,rule.weight)),fallback:true};
 }
-const AUDIO_NAMES=new Set(['earshot','real-sound','hyperframes-audio']);
-export function hoverRole(skill){
-  if(AUDIO_NAMES.has(skill.name))return{id:'audio',label:'音',color:'#c8ef78',stain:'#304315'};
-  if(skill.genres[0]==='media')return{id:'video',label:'映像',color:'#79b7ff',stain:'#193f6b'};
-  return{id:skill.genres[0]||'other',label:({image:'画像',ui:'UI・Web',words:'調査・文章',data:'資料・データ',organize:'整理・連携'})[skill.genres[0]]||'スキル',color:'#7ecefd',stain:'#204a5b'};
-}
+export const hoverRole=skillGenreStyle;

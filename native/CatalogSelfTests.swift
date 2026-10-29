@@ -23,7 +23,8 @@ import AppKit
         var pending: ((Result<Void, Error>) -> Void)?
         var delay = false
         var result: Result<Void, Error> = .success(())
-        func insert(_ text: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        func insert(_ text: String, targetReady: @escaping () -> Void, completion: @escaping (Result<Void, Error>) -> Void) {
+            targetReady()
             texts.append(text)
             if delay { pending = completion } else { completion(result) }
         }

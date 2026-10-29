@@ -1,12 +1,13 @@
 import {createSoundCadence} from './sound-cadence.js';
+import {soundVolume} from './sound-volume.js';
 
 const files=['wood-01.wav','wood-02.wav','wood-03.wav','wood-04.wav'];
 const scrollFiles=['scroll-01.wav','scroll-02.wav','scroll-03.wav'];
 export const SOUND_LEVELS=Object.freeze({hover:.28,collision:.24,startup:.42,success:.38});
-export function soundLevel(kind,strength=1){return SOUND_LEVELS[kind]*(kind==='collision'?.45+.55*Math.max(0,Math.min(1,strength)):1);}
+export function soundLevel(kind,strength=1,volume=1){return Math.min(1,SOUND_LEVELS[kind]*soundVolume(volume).gain*(kind==='collision'?.45+.55*Math.max(0,Math.min(1,strength)):1));}
 
 export function createUISound({native=false,sendNative=()=>{}}={}){
-  const pools=new Map(),voiceKinds=new WeakMap();let enabled=false,successTimer=null;
+  const pools=new Map(),voiceKinds=new WeakMap(),voiceStrengths=new WeakMap();let enabled=false,volume=0,successTimer=null;
   if(!native)for(const file of [...files,...scrollFiles,'../success-click.wav']){
     const relative=file.startsWith('../')?'../audio/success-click.wav':'../audio/ui/'+file;
     pools.set(file,Array.from({length:4},()=>{const audio=new Audio(new URL(relative,document.baseURI).href);audio.preload='auto';return audio;}));
@@ -28,11 +29,17 @@ export function createUISound({native=false,sendNative=()=>{}}={}){
     if(kind==='collision'||kind==='startup'){
       if(playing.length>=2||playing.some(voice=>voiceKinds.get(voice)!==kind))return;
     }else if(playing.length>=1)return;
-    voiceKinds.set(audio,kind);audio.volume=soundLevel(kind,strength);audio.currentTime=0;audio.play().catch(()=>{});
+    voiceKinds.set(audio,kind);voiceStrengths.set(audio,strength);audio.volume=soundLevel(kind,strength,volume);audio.currentTime=0;audio.play().catch(()=>{});
   }
   const cadence=createSoundCadence(play);
+  function setVolume(value){
+    volume=soundVolume(value).value;enabled=volume>0;cadence.setEnabled(enabled);
+    if(!enabled){clearTimeout(successTimer);successTimer=null;for(const pool of pools.values())for(const audio of pool){audio.pause();audio.currentTime=0;}}
+    else for(const pool of pools.values())for(const audio of pool)if(!audio.paused&&!audio.ended)audio.volume=soundLevel(voiceKinds.get(audio),voiceStrengths.get(audio)??1,volume);
+  }
   return{
     ...cadence,
-    setEnabled(value){enabled=!!value;cadence.setEnabled(value);if(!enabled){clearTimeout(successTimer);successTimer=null;for(const pool of pools.values())for(const audio of pool){audio.pause();audio.currentTime=0;}}}
+    setVolume,
+    setEnabled(value){setVolume(value?(volume||1):0);}
   };
 }

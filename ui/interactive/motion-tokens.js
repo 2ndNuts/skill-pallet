@@ -2,10 +2,13 @@
 // Named critical springs: touch is quick; the collection carries more weight.
 export const MOTION=Object.freeze({
   hover:Object.freeze({frequency:38}),
-  press:Object.freeze({frequency:58}),
+  // A short tap still reaches contact; release is slower than the hard seat.
+  press:Object.freeze({frequency:120,minHold:110,standOff:14.8,hoverLift:6.5}),
+  release:Object.freeze({frequency:54}),
   layout:Object.freeze({frequency:26}),
   reveal:Object.freeze({frequency:34}),
   scroll:Object.freeze({mouseTau:56,trackpadTau:30}),
+  genre:Object.freeze({duration:200}),
   arrival:Object.freeze({stagger:12,contact:180,duration:340,offsetX:56,offsetY:44}),
   hoverDwell:80,tooltipDwell:180,inkTravelFraction:.22,frameGap:150
 });

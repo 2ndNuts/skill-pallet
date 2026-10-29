@@ -3,6 +3,6 @@
   "version":"1.0.0",
   "private":true,
   "type":"module",
-  "scripts":{"build":"node build.mjs","test":"node --test catalog-runtime.test.mjs arrival-motion.test.mjs window-inertia.test.mjs sound-cadence.test.mjs motion-system.test.mjs","serve":"python3 -m http.server 8794 --bind 127.0.0.1 --directory .."},
+  "scripts":{"build":"node build.mjs","test":"node --test catalog-runtime.test.mjs arrival-motion.test.mjs window-inertia.test.mjs sound-cadence.test.mjs motion-system.test.mjs chip-press.test.mjs genre-swipe.test.mjs genre-transition.test.mjs","serve":"python3 -m http.server 8794 --bind 127.0.0.1 --directory .."},
   "dependencies":{"three":"0.186.1","esbuild":"0.28.2"}
 }

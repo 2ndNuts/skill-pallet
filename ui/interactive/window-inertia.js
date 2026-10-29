@@ -26,8 +26,9 @@ export function createChipPhysics(){
   let bodies=new Map(),active=[],width=434,height=434,scroll=0,bottom=434;
   let sequence=-1,sample=-1,dragging=false,lastReceived=-Infinity,windowX=0,windowY=0,kickX=0,kickY=0,accumulator=0;
   let scrollPosition=null,scrollTime=null,scrollVelocity=0,scrollKick=0,scrolling=false;
+  let trayPosition=null,trayTime=null,trayVelocity=0,trayKick=0,transporting=false;
   const quietPose=Object.freeze({x:0,y:0,vx:0,vy:0,tiltX:0,tiltZ:0});
-  function reset(){for(const body of bodies.values())clearBody(body);dragging=false;windowX=windowY=kickX=kickY=accumulator=0;lastReceived=-Infinity;scrollPosition=scrollTime=null;scrollVelocity=scrollKick=0;scrolling=false;}
+  function reset(){for(const body of bodies.values())clearBody(body);dragging=false;windowX=windowY=kickX=kickY=accumulator=0;lastReceived=-Infinity;scrollPosition=scrollTime=null;scrollVelocity=scrollKick=0;scrolling=false;trayPosition=trayTime=null;trayVelocity=trayKick=0;transporting=false;}
   function view(){
     active=[];
     for(const body of bodies.values()){
@@ -60,6 +61,15 @@ export function createChipPhysics(){
       scrollKick+=(next-scrollVelocity)*CHIP_PHYSICS.scrollGain;
       scrollVelocity=Math.abs(next)<.5?0:next;scrolling=Math.abs(scrollVelocity)>6;
     },
+    observeTray(position,now,active=true){
+      if(!Number.isFinite(position)||!Number.isFinite(now))return;
+      const dt=trayTime===null?0:now-trayTime,delta=trayPosition===null?0:position-trayPosition;
+      trayPosition=position;trayTime=now;transporting=active;
+      if(dt<=0){if(!active){trayKick+=trayVelocity*CHIP_PHYSICS.driveGain;trayVelocity=0;}return;}
+      if(dt>CHIP_PHYSICS.maxFrameGap){trayVelocity=trayKick=0;return;}
+      const next=active?clamp(delta*1000/dt,-1800,1800):0;
+      trayKick-=(next-trayVelocity)*CHIP_PHYSICS.driveGain;trayVelocity=next;
+    },
     receive(packet,now,wallTime){
       if(!packet||![packet.vx,packet.vy,packet.issuedAt,now,wallTime].every(Number.isFinite)||!Number.isSafeInteger(packet.sequence)||!Number.isSafeInteger(packet.sample)||typeof packet.dragging!=='boolean')return false;
       if(packet.sequence<sequence||(packet.sequence===sequence&&packet.sample<=sample))return false;
@@ -75,11 +85,11 @@ export function createChipPhysics(){
     },
     tick(milliseconds,now,reduced=false){
       const contacts=new Map();
-      if(reduced||!Number.isFinite(milliseconds)||!Number.isFinite(now)||milliseconds<0||milliseconds>CHIP_PHYSICS.maxFrameGap){reset();return{moving:false,dragging:false,scrolling:false,contacts:[]};}
+      if(reduced||!Number.isFinite(milliseconds)||!Number.isFinite(now)||milliseconds<0||milliseconds>CHIP_PHYSICS.maxFrameGap){reset();return{moving:false,dragging:false,scrolling:false,transporting:false,contacts:[]};}
       if(now-lastReceived>CHIP_PHYSICS.staleAfter){dragging=false;windowX=windowY=kickX=kickY=0;}
-      for(const body of active){body.vx=clamp(body.vx+kickX,-CHIP_PHYSICS.maxSpeed,CHIP_PHYSICS.maxSpeed);body.vy=clamp(body.vy+kickY+scrollKick,-CHIP_PHYSICS.maxSpeed,CHIP_PHYSICS.maxSpeed);}
-      kickX=kickY=scrollKick=0;accumulator+=Math.min(40,milliseconds)/1000;
-      const homing=!(dragging&&Math.hypot(windowX,windowY)>=8)&&!scrolling;
+      for(const body of active){body.vx=clamp(body.vx+kickX+trayKick,-CHIP_PHYSICS.maxSpeed,CHIP_PHYSICS.maxSpeed);body.vy=clamp(body.vy+kickY+scrollKick,-CHIP_PHYSICS.maxSpeed,CHIP_PHYSICS.maxSpeed);}
+      kickX=kickY=scrollKick=trayKick=0;accumulator+=Math.min(40,milliseconds)/1000;
+      const homing=!(dragging&&Math.hypot(windowX,windowY)>=8)&&!scrolling&&!transporting;
       function resolve(a,b,nx,ny,depth,wall){
         const other=b?.invMass??0,total=a.invMass+other;
         const correction=Math.max(0,depth-.001)/total;
@@ -132,7 +142,7 @@ export function createChipPhysics(){
         if(homing&&asleep)clearBody(body);
         if(body.x||body.y||body.vx||body.vy||body.tiltX||body.tiltZ)moving=true;
       }
-      return{moving,dragging,scrolling,contacts:[...contacts.values()]};
+      return{moving,dragging,scrolling,transporting,contacts:[...contacts.values()]};
     },
     pose(key){return bodies.get(key)??quietPose;},
     get bodies(){return[...bodies.values()];},

@@ -5,14 +5,14 @@ export function nextScroll(current,target,dt,tau){
   if(Math.abs(target-current)<.2)return target;
   return current+(target-current)*(1-Math.exp(-dt/tau));
 }
-export function createInertialScroll(viewport,{onStart=()=>{},onSettle=()=>{},getScale=()=>1}={}){
+export function createInertialScroll(viewport,{onStart=()=>{},onSettle=()=>{},getScale=()=>1,shouldHandleWheel=()=>true}={}){
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   let target=viewport.scrollTop,position=target,written=target,active=false,tau=MOTION.scroll.mouseTau,velocity=0;
   const max=()=>Math.max(0,viewport.scrollHeight-viewport.clientHeight);
   function stop(){const wasActive=active;active=false;position=target=written=viewport.scrollTop;velocity=0;viewport.dataset.scrollState='idle';if(wasActive)onSettle();}
   function reset(){stop();target=written=viewport.scrollTop;}
   viewport.addEventListener('wheel',event=>{
-    if(event.ctrlKey||event.metaKey||Math.abs(event.deltaX)>Math.abs(event.deltaY)||!max())return;
+    if(event.defaultPrevented||!shouldHandleWheel(event)||event.ctrlKey||event.metaKey||Math.abs(event.deltaX)>Math.abs(event.deltaY)||!max())return;
     const unit=event.deltaMode===1?16:event.deltaMode===2?viewport.clientHeight:1;
     const delta=event.deltaY*unit/Math.max(.25,getScale());if(!delta)return;
     event.preventDefault();

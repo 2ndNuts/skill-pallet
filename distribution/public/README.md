@@ -4,7 +4,11 @@
 
 Codexと並べて使う、Mac用のスキルランチャー。木製のチップを押すと、現在のチャットの入力欄へスキルを追記します。
 
-**[0.3.6 Beta 1をダウンロード](https://github.com/2ndNuts/skill-pallet-releases/releases/download/v0.3.6-beta.1/Skill-Pallet-0.3.6-beta.1-arm64.zip)** · [リリース情報](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.6-beta.1) · [インストール手順](INSTALL.md)
+https://github.com/user-attachments/assets/7886f68e-732b-4ff4-ad9a-5c195e51803d
+
+効果音と木目テクスチャのクレジットは[第三者素材](THIRD_PARTY_NOTICES.md)に記載しています。
+
+**[0.3.16 Beta 1をダウンロード](https://github.com/2ndNuts/skill-pallet-releases/releases/download/v0.3.16-beta.1/Skill-Pallet-0.3.16-beta.1-arm64.zip)** · [リリース情報](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.16-beta.1) · [インストール手順](INSTALL.md)
 
 ## ベータ版について
 
@@ -22,9 +26,11 @@ Codexと並べて使う、Mac用のスキルランチャー。木製のチップ
 
 - 4列の木製チップからスキルを選択。マウスオーバーで日本語の概要を表示。
 - 名前・用途・ジャンルで絞り込み、関連スキルはスタックから展開。
+- 横フリックやジャンルボタンで、4×4の木のトレーを200msで切り替え。
+- ジャンルごとに縁の色を変え、7色で用途を表示。
 - Option＋クリックでお気に入りを保存。
 - 直近30日の使用回数に応じて、木の色が5段階で変化。
-- チップごとの慣性・衝突と木の操作音。音と最前面固定は切り替え可能。
+- チップごとの慣性・衝突と木の操作音。操作音はOFF・標準・大の3段階。最前面固定も切り替え可能。
 
 ## 初めて使うとき
 

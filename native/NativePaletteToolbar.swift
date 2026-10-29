@@ -34,8 +34,7 @@ import Combine
         NSLayoutConstraint.activate([logo.widthAnchor.constraint(equalToConstant: 108), logo.heightAnchor.constraint(equalToConstant: 24)])
 
         configure(refresh, symbol: "arrow.clockwise", label: "Codexにカタログ更新を依頼", action: #selector(refreshCatalog), width: 22)
-        configure(sound, symbol: "speaker.slash", label: "操作音", action: #selector(toggleSound), width: 22)
-        sound.setButtonType(.pushOnPushOff)
+        configure(sound, symbol: "speaker.slash", label: "操作音の音量", action: #selector(cycleSoundVolume), width: 22)
         configure(pin, symbol: "pin", label: "最前面に固定", action: #selector(togglePin), width: 22)
         pin.setButtonType(.pushOnPushOff)
         configure(permission, symbol: nil, label: "Codexへの入力を有効にする", action: #selector(requestPermission), width: 30)
@@ -87,9 +86,12 @@ import Combine
     private func update() {
         refresh.isEnabled = !model.loading && !model.inserting
         format.selectItem(at: InputFormat.allCases.firstIndex(of: model.format) ?? 0)
-        sound.state = model.soundEnabled ? .on : .off
-        sound.image = NSImage(systemSymbolName: model.soundEnabled ? "speaker.wave.2" : "speaker.slash", accessibilityDescription: "操作音")
-        sound.toolTip = "操作音（起動・ホバー・スクロール・ウィンドウ移動・追記成功）：" + (model.soundEnabled ? "ON" : "OFF")
+        let volume = model.soundVolume
+        sound.title = ""
+        sound.image = NSImage(systemSymbolName: volume.symbol, accessibilityDescription: "操作音の音量")
+        sound.toolTip = "音量：\(volume.label)\(volume == .loud ? "（標準より約6dB大きい）" : "")。クリックで\(volume.next.label)へ切り替えます。"
+        sound.setAccessibilityLabel("操作音の音量：\(volume.label)")
+        sound.setAccessibilityValue(volume.label)
         pin.state = model.pinned ? .on : .off
         pin.image = NSImage(systemSymbolName: model.pinned ? "pin.fill" : "pin", accessibilityDescription: "最前面に固定")
         pin.toolTip = model.pinned ? "最前面への固定を解除" : "最前面に固定"
@@ -102,7 +104,7 @@ import Combine
         guard let value = format.selectedItem?.representedObject as? String, let selection = InputFormat(rawValue: value) else { return }
         model.selectFormat(selection)
     }
-    @objc private func toggleSound() { model.selectSound(!model.soundEnabled) }
+    @objc private func cycleSoundVolume() { model.selectSoundVolume(model.soundVolume.next) }
     @objc private func togglePin() { model.selectPinned(!model.pinned) }
     @objc private func requestPermission() { model.requestPermission() }
 
@@ -119,6 +121,7 @@ import Combine
         switch identifier {
         case Self.brandID:
             item.view = logo; item.label = "Skill Pallet"
+            item.visibilityPriority = .init(rawValue: 1500)
         case Self.controlsID:
             item.view = controls; item.label = "パレットの操作"
             item.visibilityPriority = .high

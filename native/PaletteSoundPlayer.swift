@@ -1,5 +1,18 @@
 import AppKit
 
+enum PaletteSoundVolume: Int, CaseIterable {
+    case off = 0, standard = 1, loud = 2
+    static let preferenceKey = "soundVolumeLevelV1"
+    var gain: Float { self == .off ? 0 : self == .loud ? 2 : 1 }
+    var label: String { self == .off ? "OFF" : self == .loud ? "大" : "標準" }
+    var symbol: String { self == .off ? "speaker.slash" : self == .loud ? "speaker.wave.3" : "speaker.wave.2" }
+    var next: Self { Self(rawValue: (rawValue + 1) % Self.allCases.count)! }
+    static func load(from preferences: UserDefaults) -> Self {
+        if let raw = preferences.object(forKey: preferenceKey) as? Int, let value = Self(rawValue: raw) { return value }
+        return preferences.bool(forKey: "successSound") ? .standard : .off
+    }
+}
+
 @MainActor final class PaletteSoundPlayer {
     private static let levels: [String: Float] = ["hover": 0.28, "collision": 0.24, "startup": 0.42, "success": 0.38]
     // JS spaces collision cues by 125ms. Leave delivery jitter a little room;
@@ -7,6 +20,8 @@ import AppKit
     private static let intervals: [String: TimeInterval] = ["hover": 0.26, "collision": 0.10, "startup": 0.12, "success": 0.15]
     private var voices: [String: [NSSound]] = [:]
     private var voiceKinds: [ObjectIdentifier: String] = [:]
+    private var voiceStrengths: [ObjectIdentifier: Double] = [:]
+    private(set) var volume: PaletteSoundVolume = .off
     private var lastByKind: [String: TimeInterval] = [:]
     private var lastAny: TimeInterval = -.infinity
     private var pendingSuccess: Task<Void, Never>?
@@ -23,8 +38,23 @@ import AppKit
         let pool = (0..<4).compactMap { _ in NSSound(contentsOf: url, byReference: false) }
         if pool.count == 4 { voices[key] = pool }
     }
+    static func playbackLevel(kind: String, volume: PaletteSoundVolume, strength: Double = 1) -> Float? {
+        guard let level = levels[kind], strength.isFinite, (0...1).contains(strength) else { return nil }
+        return min(1, level * volume.gain * (kind == "collision" ? Float(0.45 + 0.55 * strength) : 1))
+    }
+    func setVolume(_ value: PaletteSoundVolume) {
+        volume = value
+        if value == .off { stop(); return }
+        for voice in voices.values.flatMap({ $0 }) where voice.isPlaying {
+            let id = ObjectIdentifier(voice)
+            if let kind = voiceKinds[id], let level = Self.playbackLevel(kind: kind, volume: value, strength: voiceStrengths[id] ?? 1) {
+                voice.volume = level
+            }
+        }
+    }
     @discardableResult func play(kind: String, take: Int, strength: Double = 1) -> Bool {
-        guard let level = Self.levels[kind], let interval = Self.intervals[kind], (0...3).contains(take), strength.isFinite, (0...1).contains(strength) else { return false }
+        guard volume != .off, let level = Self.playbackLevel(kind: kind, volume: volume, strength: strength),
+              let interval = Self.intervals[kind], (0...3).contains(take) else { return false }
         if pendingSuccess != nil, kind != "success" { return false }
         let now = ProcessInfo.processInfo.systemUptime
         guard now - (lastByKind[kind] ?? -.infinity) >= interval else { return false }
@@ -51,9 +81,10 @@ import AppKit
         }
         let key = kind == "success" ? "success" : kind == "collision" ? String(format: "scroll-%02d", take % 3 + 1) : String(format: "wood-%02d", take + 1)
         guard let voice = voices[key]?.first(where: { !$0.isPlaying }) else { return false }
-        voice.volume = level * (kind == "collision" ? Float(0.45 + 0.55 * strength) : 1)
+        voice.volume = level
         guard voice.play() else { return false }
         voiceKinds[ObjectIdentifier(voice)] = kind
+        voiceStrengths[ObjectIdentifier(voice)] = strength
         lastByKind[kind] = now; lastAny = now
         return true
     }

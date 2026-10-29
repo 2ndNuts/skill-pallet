@@ -32,8 +32,8 @@ import os
         updates = model.objectWillChange.sink { [weak self] in
             DispatchQueue.main.async { self?.sendState() }
         }
-        soundUpdates = model.$soundEnabled.removeDuplicates().sink { [weak self] enabled in
-            if !enabled { self?.sounds.stop() }
+        soundUpdates = model.$soundVolume.removeDuplicates().sink { [weak self] volume in
+            self?.sounds.setVolume(volume)
         }
         webView.loadFileURL(entry, allowingReadAccessTo: root)
     }
@@ -70,7 +70,7 @@ import os
     private func snapshot() -> [String: Any] {
         ["skills": model.skills.map { ["id": $0.id, "name": $0.name, "summary": $0.summary, "description": $0.description, "source": $0.source, "invocation": $0.invocation, "genres": $0.genres, "tags": $0.tags] as [String: Any] },
          "usage": ["windowDays": 30, "counts": model.usageCounts], "usageError": model.usageError,
-         "favorites": Array(model.favorites), "format": model.format.rawValue, "sound": model.soundEnabled, "pinned": model.pinned,
+         "favorites": Array(model.favorites), "format": model.format.rawValue, "sound": model.soundEnabled, "soundVolume": model.soundVolume.rawValue, "pinned": model.pinned,
          "trusted": model.trusted, "inserting": model.inserting, "status": model.status, "error": model.error, "loading": model.loading,
          "catalogMissing": model.catalogMissing, "catalogError": model.catalogError, "playArrival": playArrival, "arrivalSequence": model.arrivalSequence]
     }
@@ -116,6 +116,9 @@ import os
             guard let value = body["value"] as? Bool else { reply(false, "音の設定が正しくありません。"); return }
             if !value { sounds.stop() }
             model.selectSound(value); reply(true, nil)
+        case "soundVolume":
+            guard let raw = body["value"] as? Int, let volume = PaletteSoundVolume(rawValue: raw) else { reply(false, "音量の設定が正しくありません。"); return }
+            model.selectSoundVolume(volume); reply(true, nil)
         case "pin":
             guard let value = body["value"] as? Bool else { reply(false, "最前面の設定が正しくありません。"); return }
             model.selectPinned(value); reply(true, nil)

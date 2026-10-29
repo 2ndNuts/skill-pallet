@@ -63,6 +63,26 @@ struct EditorInfo {
     }
 }
 
+struct WebAccessibilityActivation {
+    let manual: AXError
+    let enhanced: AXError?
+    // Chromium may apply this attribute and then return its superclass's
+    // notImplemented result. Discovery, not this status, proves readiness.
+    var requestedEnhanced: Bool { enhanced == .success || enhanced == .notImplemented }
+}
+
+func activateWebAccessibility(write: (String) -> AXError) -> WebAccessibilityActivation {
+    let manual = write("AXManualAccessibility")
+    return WebAccessibilityActivation(manual: manual,
+        enhanced: manual == .success ? nil : write("AXEnhancedUserInterface"))
+}
+
+func shouldRetryEditorDiscovery(eligibleCount: Int, attempt: Int, now: Date, deadline: Date) -> Bool {
+    // Chromium's enhanced mode can wait two seconds before publishing the
+    // web tree. A shorter attempt limit expires before that first activation.
+    eligibleCount == 0 && attempt < 30 && now < deadline
+}
+
 func chooseEditor(_ values: [EditorInfo]) -> Int? {
     let ranked = values.enumerated().filter { $0.element.score >= 40 }.sorted { $0.element.score > $1.element.score }
     guard let first = ranked.first else { return nil }
@@ -82,6 +102,28 @@ func insertionLocation(text: String, characterCount: Int?, range: CFRange?, end:
     return nil
 }
 
+enum ComposerInsertionSite: Equatable {
+    case draft(Int), emptyDecoration
+    var location: Int {
+        if case .draft(let value) = self { return value }
+        return 0
+    }
+}
+
+func composerInsertionSite(text: String, characterCount: Int?, range: CFRange?, end: Int,
+                           placeholderCandidate: Bool, allowEmptyDecoration: Bool) -> ComposerInsertionSite? {
+    // A real end caret always wins, even when a stale decoration matches the
+    // draft. Never move the caret into the middle of a potential real draft.
+    if let location = insertionLocation(text: text, characterCount: characterCount, range: range, end: end) {
+        return .draft(location)
+    }
+    guard placeholderCandidate, allowEmptyDecoration || characterCount == 0,
+          text.utf16.count > 1,
+          characterCount == nil || characterCount == 0 || characterCount == text.utf16.count,
+          let range, range.location == 0, range.length == 0 else { return nil }
+    return .emptyDecoration
+}
+
 func insertionPointIsReady(text: String, characterCount: Int?, range: CFRange?, end: Int) -> Bool {
     insertionLocation(text: text, characterCount: characterCount, range: range, end: end) != nil
 }
@@ -98,6 +140,11 @@ func insertionCommand(_ command: String, before: String, location: Int) -> Strin
     return (prefix.isEmpty || prefix.last?.isWhitespace == true ? "" : " ") + command
 }
 
+func supportsComposerDecorationProfile(_ version: String) -> Bool {
+    // Empty-document decoration rules were inspected in these host bundles.
+    version == "26.429.30905" || version == "26.1021.31345"
+}
+
 func isGeneratedComposerPlaceholder(_ value: String, placeholder: String, decoratedEmptyParagraph: Bool, supportedProfile: Bool) -> Bool {
     guard supportedProfile, decoratedEmptyParagraph else { return false }
     let body = value.hasSuffix("\n") ? String(value.dropLast()) : value
@@ -109,26 +156,41 @@ func editableComposerText(_ raw: String, generatedPlaceholder: Bool) -> String {
     generatedPlaceholder ? (raw.hasSuffix("\n") ? "\n" : "") : raw
 }
 
-func insertionWasApplied(before: String, after: String, insertion: String, location: Int? = nil) -> Bool {
+func insertionWasApplied(before: String, after: String, insertion: String, location: Int? = nil,
+                         allowsMissingStructuralLF: Bool = false) -> Bool {
     let start = location ?? before.utf16.count
     guard before != after, insertionIndex(in: before, utf16Offset: start) != nil else { return false }
     let original = Array(before.utf16), actual = Array(after.utf16)
     let prefix = Array(original.prefix(start)), suffix = Array(original.dropFirst(start))
-    guard actual.count >= prefix.count + suffix.count,
-          Array(actual.prefix(prefix.count)) == prefix,
-          Array(actual.suffix(suffix.count)) == suffix else { return false }
-    let added = Array(actual[prefix.count..<(actual.count - suffix.count)])
-    var requested = Array(insertion.utf16)
-    // Only the command's own final separator may be omitted by the editor.
-    // Existing leading/trailing draft whitespace is never trimmed for a match.
-    if requested.last == 0x20, added.count == requested.count - 1 { requested.removeLast() }
-    // A contenteditable may preserve a pasted ASCII space as NBSP. Accept
-    // that representation only inside the newly inserted range. Every UTF-16
-    // unit of the existing draft, mentions and paragraph suffix must still match.
-    guard requested.count == added.count else { return false }
-    return zip(requested, added).allSatisfy { expected, observed in
-        expected == observed || (expected == 0x20 && observed == 0xA0)
+    func matches(prefix: [UInt16], suffix: [UInt16], requestedInsertion: [UInt16]? = nil) -> Bool {
+        guard actual.count >= prefix.count + suffix.count,
+              Array(actual.prefix(prefix.count)) == prefix,
+              Array(actual.suffix(suffix.count)) == suffix else { return false }
+        let added = Array(actual[prefix.count..<(actual.count - suffix.count)])
+        var requested = requestedInsertion ?? Array(insertion.utf16)
+        // Only the command's own final separator may be omitted by the editor.
+        // Existing leading/trailing draft whitespace is never trimmed for a match.
+        if requested.last == 0x20, added.count == requested.count - 1 { requested.removeLast() }
+        // A contenteditable may preserve a pasted ASCII space as NBSP. Accept
+        // that representation only inside the newly inserted range.
+        guard requested.count == added.count else { return false }
+        return zip(requested, added).allSatisfy { expected, observed in
+            expected == observed || (expected == 0x20 && observed == 0xA0)
+        }
     }
+    if matches(prefix: prefix, suffix: suffix) { return true }
+    // Chromium can expose an empty paragraph's final LF before Paste and omit
+    // it afterwards. Only allow that representation change when the requested
+    // full-end caret was observed clamping immediately before the sole suffix
+    // LF. All existing draft text and user line breaks remain in the prefix.
+    guard allowsMissingStructuralLF, suffix == [10] else { return false }
+    if matches(prefix: prefix, suffix: []) { return true }
+    // In an empty final paragraph Chromium may expose the original LF after
+    // our new leading separator instead of after the command. Only that
+    // separator crosses the boundary; the draft and command stay exact.
+    let requested = Array(insertion.utf16)
+    guard !prefix.isEmpty, requested.first == 0x20 else { return false }
+    return matches(prefix: prefix, suffix: [], requestedInsertion: [0x20, 10] + requested.dropFirst())
 }
 
 final class TemporaryPaste {
@@ -185,7 +247,7 @@ final class TemporaryPaste {
 }
 
 protocol SkillInserting: AnyObject {
-    func insert(_ text: String, completion: @escaping (Result<Void, Error>) -> Void)
+    func insert(_ text: String, targetReady: @escaping () -> Void, completion: @escaping (Result<Void, Error>) -> Void)
     func restoreClipboard()
 }
 
@@ -194,9 +256,13 @@ final class CodexInserter: SkillInserting {
     private var activationObserver: NSObjectProtocol?
     private var pendingPaste: TemporaryPaste?
     private var diagnosticEvents: [String] = []
+    private var diagnosticStart = ProcessInfo.processInfo.systemUptime
     private var supportsPlaceholderDecoration = false
+    private var enhancedAccessibilityLaunches: [pid_t: Date] = [:]
     private func record(_ stage: String, _ details: String = "") {
-        diagnosticEvents.append(details.isEmpty ? stage : "\(stage): \(details)")
+        let elapsed = Int(((ProcessInfo.processInfo.systemUptime - diagnosticStart) * 1000).rounded())
+        let event = details.isEmpty ? stage : "\(stage): \(details)"
+        diagnosticEvents.append("\(event) elapsedMs=\(elapsed)")
         UserDefaults.standard.set(diagnosticEvents, forKey: "lastInsertionDiagnostics")
     }
     func restoreClipboard() { pendingPaste?.restore(); pendingPaste = nil }
@@ -224,25 +290,32 @@ final class CodexInserter: SkillInserting {
         attribute(element, name) as? String ?? ""
     }
     private func hasPlaceholderDecoration(_ editor: AXUIElement) -> Bool {
-        // The inspected composer marks its sole empty paragraph with this
-        // class. Look only at the editor and its immediate paragraph children.
-        let nodes = [editor] + ((attribute(editor, kAXChildrenAttribute) as? [AXUIElement]) ?? []).prefix(8)
-        return nodes.contains { node in
+        // These inspected decorators are created only for an empty paragraph.
+        // AX may insert a paragraph wrapper, so inspect two bounded levels.
+        var nodes: [(AXUIElement, Int)] = [(editor, 0)], examined = 0
+        while let (node, depth) = nodes.popLast(), examined < 16 {
+            examined += 1
             let classes = (attribute(node, "AXDOMClassList") as? [String])
                 ?? string(node, "AXDOMClassList").split(whereSeparator: \.isWhitespace).map(String.init)
-            return classes.contains("placeholder")
+            if depth > 0, classes.contains("placeholder") || classes.contains("prosemirror-placeholder") { return true }
+            if depth < 2, let children = attribute(node, kAXChildrenAttribute) as? [AXUIElement] {
+                nodes.append(contentsOf: children.prefix(8).reversed().map { ($0, depth + 1) })
+            }
         }
+        return false
     }
-    private func textState(_ element: AXUIElement) -> (text: String, count: Int?, generatedPlaceholder: Bool)? {
+    private func textState(_ element: AXUIElement) -> (text: String, count: Int?, placeholderCandidate: Bool, placeholderDecoration: Bool)? {
         let value = attribute(element, kAXValueAttribute) as? String
         let count = (attribute(element, kAXNumberOfCharactersAttribute) as? NSNumber)?.intValue
         if let value {
-            let decorated = supportsPlaceholderDecoration && hasPlaceholderDecoration(element)
-            let generated = isGeneratedComposerPlaceholder(value, placeholder: decorated ? string(element, "AXPlaceholderValue") : "",
-                decoratedEmptyParagraph: decorated, supportedProfile: supportsPlaceholderDecoration)
-            return (value, count, generated)
+            var placeholder = supportsPlaceholderDecoration ? string(element, "AXPlaceholderValue") : ""
+            if placeholder.isEmpty && supportsPlaceholderDecoration { placeholder = string(element, kAXDescriptionAttribute) }
+            let candidate = isGeneratedComposerPlaceholder(value, placeholder: placeholder,
+                decoratedEmptyParagraph: true, supportedProfile: supportsPlaceholderDecoration)
+            let decorated = candidate && hasPlaceholderDecoration(element)
+            return (value, count, candidate && decorated, decorated)
         }
-        if count == 0 { return ("", count, false) }
+        if count == 0 { return ("", count, false, false) }
         return nil
     }
     private func flag(_ element: AXUIElement, _ name: String, fallback: Bool) -> Bool {
@@ -269,17 +342,17 @@ final class CodexInserter: SkillInserting {
             visible: dimensions.width > 40 && dimensions.height > 10 && !flag(element, "AXHidden", fallback: false),
             focused: flag(element, kAXFocusedAttribute, fallback: false))
     }
-    private func findEditors(in root: AXUIElement, application: AXUIElement) -> [(AXUIElement, EditorInfo)] {
+    private func findEditors(in root: AXUIElement, application: AXUIElement, deadline: Date) -> [(AXUIElement, EditorInfo)] {
         // The currently focused, named composer is independent of chat length.
         if let focused = elementAttribute(application, kAXFocusedUIElementAttribute),
            let focusedWindow = elementAttribute(focused, kAXWindowAttribute), CFEqual(focusedWindow, root) {
             let metadata = info(focused)
+            record("focused-editor", "role=\(metadata.role) score=\(metadata.score) visible=\(metadata.visible) enabled=\(metadata.enabled)")
             if metadata.score >= 100 { return [(focused, metadata)] }
         }
         var stack: [(AXUIElement, Int)] = [(root, 0)]
         var examined = 0
         var result: [(AXUIElement, EditorInfo)] = []
-        let deadline = Date().addingTimeInterval(4)
         while let (element, depth) = stack.popLast(), examined < 6000, Date() < deadline {
             examined += 1
             let role = string(element, kAXRoleAttribute)
@@ -291,9 +364,14 @@ final class CodexInserter: SkillInserting {
                 stack.append(contentsOf: children.map { ($0, depth + 1) })
             }
         }
+        record("lookup-tree", "examined=\(examined) textEditors=\(result.count) deadline=\(Date() >= deadline) nodeLimit=\(examined >= 6000)")
+        for metadata in result.prefix(8).map({ $0.1 }) {
+            record("candidate", "role=\(metadata.role) score=\(metadata.score) visible=\(metadata.visible) enabled=\(metadata.enabled) focused=\(metadata.focused)")
+        }
         return result
     }
-    func insert(_ text: String, completion: @escaping (Result<Void, Error>) -> Void) {
+    func insert(_ text: String, targetReady: @escaping () -> Void = {}, completion: @escaping (Result<Void, Error>) -> Void) {
+        diagnosticStart = ProcessInfo.processInfo.systemUptime
         diagnosticEvents = []
         record("begin", "trusted=\(AXIsProcessTrusted())")
         guard AXIsProcessTrusted() else { completion(.failure(InsertionError.permission)); return }
@@ -306,22 +384,76 @@ final class CodexInserter: SkillInserting {
         lastCodexPID = target.processIdentifier
         // CSS .placeholder:after and the empty-document decoration were
         // inspected in this installed version. Unknown versions stay strict.
-        supportsPlaceholderDecoration = target.bundleURL.flatMap { Bundle(url: $0)?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String } == "26.429.30905"
+        let targetVersion = target.bundleURL.flatMap { Bundle(url: $0)?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String } ?? "unknown"
+        supportsPlaceholderDecoration = supportsComposerDecorationProfile(targetVersion)
+        record("target", "version=\(targetVersion)")
         let application = AXUIElementCreateApplication(target.processIdentifier)
         AXUIElementSetMessagingTimeout(application, 0.25)
-        AXUIElementSetAttributeValue(application, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+        let launch = target.launchDate ?? .distantPast
+        if enhancedAccessibilityLaunches[target.processIdentifier] == launch {
+            record("accessibility", "enhanced=alreadyRequested")
+        } else {
+            let activation = activateWebAccessibility { name in
+                AXUIElementSetAttributeValue(application, name as CFString, kCFBooleanTrue)
+            }
+            record("accessibility", "manualAXError=\(activation.manual.rawValue)")
+            if let enhanced = activation.enhanced {
+                record("accessibility-enhanced", "AXError=\(enhanced.rawValue)")
+                if activation.requestedEnhanced { enhancedAccessibilityLaunches[target.processIdentifier] = launch }
+            }
+        }
         let previousWindow = elementAttribute(application, kAXFocusedWindowAttribute)
             ?? elementAttribute(application, kAXMainWindowAttribute)
         // The lookup occurs on each user click, so no thread ID is retained.
-        target.activate(options: [])
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [self] in
+        if !target.isActive { target.activate(options: []) }
+        DispatchQueue.main.async { [self] in
+            prepareWhenActive(text, application: application, expectedWindow: previousWindow, pid: target.processIdentifier,
+                activationDeadline: ProcessInfo.processInfo.systemUptime + 0.75, targetReady: targetReady, completion: completion)
+        }
+    }
+    private func prepareWhenActive(_ text: String, application: AXUIElement, expectedWindow: AXUIElement?, pid: pid_t,
+                                   activationDeadline: TimeInterval, targetReady: @escaping () -> Void,
+                                   completion: @escaping (Result<Void, Error>) -> Void) {
+        guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else {
+            guard ProcessInfo.processInfo.systemUptime < activationDeadline else {
+                record("activation-failed")
+                completion(.failure(InsertionError.focus)); return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.008) { [self] in
+                prepareWhenActive(text, application: application, expectedWindow: expectedWindow, pid: pid,
+                    activationDeadline: activationDeadline, targetReady: targetReady, completion: completion)
+            }
+            return
+        }
+        record("activation-ready")
+        targetReady()
+        prepareInsertion(text, application: application, expectedWindow: expectedWindow, pid: pid,
+            deadline: Date().addingTimeInterval(6), completion: completion)
+    }
+    private func prepareInsertion(_ text: String, application: AXUIElement, expectedWindow: AXUIElement?, pid: pid_t,
+                                  deadline: Date, attempt: Int = 0, completion: @escaping (Result<Void, Error>) -> Void) {
+            record("lookup", "attempt=\(attempt)")
             guard let window = elementAttribute(application, kAXFocusedWindowAttribute) else {
+                record("lookup-failed", "noWindow")
                 completion(.failure(InsertionError.noWindow)); return
             }
-            if let previousWindow, !CFEqual(previousWindow, window) { completion(.failure(InsertionError.changed)); return }
-            let candidates = findEditors(in: window, application: application)
+            if let expectedWindow, !CFEqual(expectedWindow, window) {
+                record("lookup-failed", "windowChanged")
+                completion(.failure(InsertionError.changed)); return
+            }
+            let candidates = findEditors(in: window, application: application, deadline: deadline)
             guard let chosen = chooseEditor(candidates.map { $0.1 }) else {
-                completion(.failure(candidates.filter { $0.1.score >= 40 }.count > 1 ? InsertionError.ambiguous : InsertionError.noComposer)); return
+                let eligible = candidates.filter { $0.1.score >= 40 }.count
+                if shouldRetryEditorDiscovery(eligibleCount: eligible, attempt: attempt, now: Date(), deadline: deadline) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [self] in
+                        prepareInsertion(text, application: application, expectedWindow: window, pid: pid,
+                            deadline: deadline, attempt: attempt + 1, completion: completion)
+                    }
+                } else {
+                    record("lookup-failed", eligible > 1 ? "ambiguous" : "noComposer")
+                    completion(.failure(eligible > 1 ? InsertionError.ambiguous : InsertionError.noComposer))
+                }
+                return
             }
             let editor = candidates[chosen].0
             record("editor", "role=\(candidates[chosen].1.role)")
@@ -341,7 +473,7 @@ final class CodexInserter: SkillInserting {
             }
             let oldValue = state.text
             let length = state.count ?? oldValue.utf16.count
-            record("text", "utf16=\(oldValue.utf16.count) characters=\(state.count ?? -1) blank=\(oldValue.allSatisfy(\.isWhitespace)) finalLF=\(oldValue.utf16.last == 10) generatedPlaceholder=\(state.generatedPlaceholder) placeholderProfile=\(supportsPlaceholderDecoration)")
+            record("text", "utf16=\(oldValue.utf16.count) characters=\(state.count ?? -1) blank=\(oldValue.allSatisfy(\.isWhitespace)) finalLF=\(oldValue.utf16.last == 10) placeholderCandidate=\(state.placeholderCandidate) placeholderProfile=\(supportsPlaceholderDecoration) placeholderDecoration=\(state.placeholderDecoration)")
             var range = CFRange(location: length, length: 0)
             guard let selection = AXValueCreate(.cfRange, &range) else {
                 completion(.failure(InsertionError.unsupported)); return
@@ -351,77 +483,98 @@ final class CodexInserter: SkillInserting {
             guard selectionResult == .success || oldValue.allSatisfy(\.isWhitespace) else {
                 completion(.failure(InsertionError.unsupported)); return
             }
-            pasteWhenReady(editor, application: application, window: window, pid: target.processIdentifier,
-                before: oldValue, generatedPlaceholder: state.generatedPlaceholder, command: text, end: length, completion: completion)
-        }
+            let readinessDeadline = ProcessInfo.processInfo.systemUptime + 0.48
+            DispatchQueue.main.async { [self] in
+                pasteWhenReady(editor, application: application, window: window, pid: pid,
+                    before: oldValue, placeholderCandidate: state.placeholderCandidate, command: text, end: length,
+                    readinessDeadline: readinessDeadline, completion: completion)
+            }
     }
     private func pasteWhenReady(_ editor: AXUIElement, application: AXUIElement, window: AXUIElement, pid: pid_t,
-                                before: String, generatedPlaceholder: Bool, command: String, end: Int, attempt: Int = 0,
+                                before: String, placeholderCandidate: Bool, command: String, end: Int,
+                                readinessDeadline: TimeInterval, attempt: Int = 0,
                                 completion: @escaping (Result<Void, Error>) -> Void) {
         // Chromium applies AX focus and selection asynchronously. Confirm both
         // before issuing one ordinary Paste command, never a text replacement.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [self] in
-            guard let latestWindow = elementAttribute(application, kAXFocusedWindowAttribute), CFEqual(latestWindow, window) else {
-                completion(.failure(InsertionError.changed)); return
-            }
-            guard let focused = elementAttribute(application, kAXFocusedUIElementAttribute), CFEqual(focused, editor),
-                  NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else {
-                completion(.failure(InsertionError.focus)); return
-            }
-            guard let state = textState(editor), state.text == before, state.generatedPlaceholder == generatedPlaceholder else {
-                record("draft-changed")
-                completion(.failure(InsertionError.changed)); return
-            }
-            let range = selectedRange(editor)
-            record("caret", "location=\(range?.location ?? -1) length=\(range?.length ?? -1) expected=\(end) attempt=\(attempt)")
-            guard let location = insertionLocation(text: before, characterCount: state.count, range: range, end: end) else {
-                if attempt < 5 {
+        guard let latestWindow = elementAttribute(application, kAXFocusedWindowAttribute), CFEqual(latestWindow, window) else {
+            completion(.failure(InsertionError.changed)); return
+        }
+        guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else {
+            completion(.failure(InsertionError.focus)); return
+        }
+        let focusReady = elementAttribute(application, kAXFocusedUIElementAttribute).map { CFEqual($0, editor) } ?? false
+        guard let state = textState(editor), state.text == before, state.placeholderCandidate == placeholderCandidate else {
+            record("draft-changed")
+            completion(.failure(InsertionError.changed)); return
+        }
+        let range = selectedRange(editor)
+        record("caret", "location=\(range?.location ?? -1) length=\(range?.length ?? -1) expected=\(end) focused=\(focusReady) attempt=\(attempt)")
+        let site = composerInsertionSite(text: before, characterCount: state.count, range: range, end: end,
+            placeholderCandidate: placeholderCandidate,
+            allowEmptyDecoration: ProcessInfo.processInfo.systemUptime >= readinessDeadline)
+        guard focusReady, let site else {
+            if ProcessInfo.processInfo.systemUptime < readinessDeadline {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.008) { [self] in
                     pasteWhenReady(editor, application: application, window: window, pid: pid, before: before,
-                        generatedPlaceholder: generatedPlaceholder, command: command, end: end, attempt: attempt + 1, completion: completion)
-                } else { completion(.failure(InsertionError.unsupported)) }
-                return
-            }
-            guard let down = CGEvent(keyboardEventSource: nil, virtualKey: 9, keyDown: true),
-                  let up = CGEvent(keyboardEventSource: nil, virtualKey: 9, keyDown: false) else {
-                completion(.failure(InsertionError.unsupported)); return
-            }
-            let logicalBefore = editableComposerText(before, generatedPlaceholder: generatedPlaceholder)
-            let logicalLocation = generatedPlaceholder ? 0 : location
-            guard let insertion = insertionCommand(command, before: logicalBefore, location: logicalLocation) else {
-                completion(.failure(InsertionError.unsupported)); return
-            }
-            record("append-location", "location=\(location) structuralLF=\(location == end - 1) logicalUTF16=\(logicalBefore.utf16.count) generatedPlaceholder=\(generatedPlaceholder)")
-            do { pendingPaste = try TemporaryPaste(text: insertion) }
-            catch { completion(.failure(error)); return }
-            // Materializing promised clipboard data may take time. Recheck the
-            // destination after that work, immediately before dispatching Paste.
-            guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid,
-                  let currentWindow = elementAttribute(application, kAXFocusedWindowAttribute), CFEqual(currentWindow, window),
-                  let currentEditor = elementAttribute(application, kAXFocusedUIElementAttribute), CFEqual(currentEditor, editor),
-                  let currentState = textState(editor), currentState.text == before, currentState.generatedPlaceholder == generatedPlaceholder,
-                  insertionLocation(text: before, characterCount: currentState.count, range: selectedRange(editor), end: end) == location else {
-                record("destination-changed")
-                restoreClipboard()
-                completion(.failure(InsertionError.changed)); return
-            }
-            down.flags = .maskCommand; up.flags = .maskCommand
-            down.postToPid(pid); up.postToPid(pid)
-            record("paste-posted")
-            // Paste is posted only to the verified process. No Return or Send.
-            verify(editor, before: logicalBefore, insertion: insertion, location: logicalLocation) { [self] result in
-                restoreClipboard()
-                completion(result)
-            }
+                        placeholderCandidate: placeholderCandidate, command: command, end: end,
+                        readinessDeadline: readinessDeadline, attempt: attempt + 1, completion: completion)
+                }
+            } else { completion(.failure(focusReady ? InsertionError.unsupported : InsertionError.focus)) }
+            return
+        }
+        guard let down = CGEvent(keyboardEventSource: nil, virtualKey: 9, keyDown: true),
+              let up = CGEvent(keyboardEventSource: nil, virtualKey: 9, keyDown: false) else {
+            completion(.failure(InsertionError.unsupported)); return
+        }
+        let usesEmptyDecoration = site == .emptyDecoration
+        let location = site.location
+        let logicalBefore = editableComposerText(before, generatedPlaceholder: usesEmptyDecoration)
+        let logicalLocation = location
+        let allowsMissingStructuralLF = (usesEmptyDecoration || location == end - 1) && logicalBefore.utf16.last == 10
+        guard let insertion = insertionCommand(command, before: logicalBefore, location: logicalLocation) else {
+            completion(.failure(InsertionError.unsupported)); return
+        }
+        record("append-location", "location=\(location) structuralLF=\(location == end - 1) logicalUTF16=\(logicalBefore.utf16.count) emptyDecoration=\(usesEmptyDecoration)")
+        do { pendingPaste = try TemporaryPaste(text: insertion) }
+        catch { completion(.failure(error)); return }
+        // Materializing promised clipboard data may take time. Recheck the
+        // destination after that work, immediately before dispatching Paste.
+        guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid,
+              let currentWindow = elementAttribute(application, kAXFocusedWindowAttribute), CFEqual(currentWindow, window),
+              let currentEditor = elementAttribute(application, kAXFocusedUIElementAttribute), CFEqual(currentEditor, editor),
+              let currentState = textState(editor), currentState.text == before, currentState.placeholderCandidate == placeholderCandidate,
+              composerInsertionSite(text: before, characterCount: currentState.count, range: selectedRange(editor), end: end,
+                  placeholderCandidate: placeholderCandidate, allowEmptyDecoration: usesEmptyDecoration) == site else {
+            record("destination-changed")
+            restoreClipboard()
+            completion(.failure(InsertionError.changed)); return
+        }
+        down.flags = .maskCommand; up.flags = .maskCommand
+        down.postToPid(pid); up.postToPid(pid)
+        record("paste-posted")
+        // Paste is posted only to the verified process. No Return or Send.
+        verify(editor, before: logicalBefore, insertion: insertion, location: logicalLocation,
+            allowsMissingStructuralLF: allowsMissingStructuralLF,
+            deadline: ProcessInfo.processInfo.systemUptime + 1.5) { [self] result in
+            restoreClipboard()
+            completion(result)
         }
     }
-    private func verify(_ editor: AXUIElement, before: String, insertion: String, location: Int, attempt: Int = 0, completion: @escaping (Result<Void, Error>) -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [self] in
+    private func verify(_ editor: AXUIElement, before: String, insertion: String, location: Int,
+                        allowsMissingStructuralLF: Bool, deadline: TimeInterval, attempt: Int = 0,
+                        completion: @escaping (Result<Void, Error>) -> Void) {
+        let delay = min(0.05, 0.008 * pow(2, Double(min(attempt, 3))))
+        DispatchQueue.main.asyncAfter(deadline: .now() + min(delay, max(0, deadline - ProcessInfo.processInfo.systemUptime))) { [self] in
             let state = textState(editor)
             let value = state?.text ?? ""
-            let applied = state != nil && state?.generatedPlaceholder == false && insertionWasApplied(before: before, after: value, insertion: insertion, location: location)
-            record("verify", "utf16=\(value.utf16.count) expectedUTF16=\(before.utf16.count + insertion.utf16.count) nonbreakingSpaces=\(value.utf16.filter { $0 == 0xA0 }.count) generatedPlaceholder=\(state?.generatedPlaceholder ?? false) applied=\(applied) attempt=\(attempt)")
+            let applied = state != nil && state?.placeholderCandidate == false && insertionWasApplied(before: before, after: value,
+                insertion: insertion, location: location, allowsMissingStructuralLF: allowsMissingStructuralLF)
+            record("verify", "utf16=\(value.utf16.count) expectedUTF16=\(before.utf16.count + insertion.utf16.count) finalLF=\(value.utf16.last == 10) structuralLF=\(allowsMissingStructuralLF) nonbreakingSpaces=\(value.utf16.filter { $0 == 0xA0 }.count) generatedPlaceholder=\(state?.placeholderCandidate ?? false) applied=\(applied) attempt=\(attempt)")
             if applied { completion(.success(())) }
-            else if attempt < 9 { verify(editor, before: before, insertion: insertion, location: location, attempt: attempt + 1, completion: completion) }
+            else if ProcessInfo.processInfo.systemUptime < deadline {
+                verify(editor, before: before, insertion: insertion, location: location,
+                    allowsMissingStructuralLF: allowsMissingStructuralLF, deadline: deadline, attempt: attempt + 1, completion: completion)
+            }
             else { completion(.failure(InsertionError.unconfirmed)) }
         }
     }
@@ -440,7 +593,8 @@ final class CodexInserter: SkillInserting {
     @Published var format: InputFormat
     @Published var usageCounts: [String: Int] = [:]
     @Published var usageError = ""
-    @Published var soundEnabled: Bool
+    @Published var soundVolume: PaletteSoundVolume
+    var soundEnabled: Bool { soundVolume != .off }
     @Published var pinned: Bool
     @Published var catalogMissing = false
     @Published var catalogError = ""
@@ -467,7 +621,7 @@ final class CodexInserter: SkillInserting {
         favoriteIdentities = Set(savedFavoriteIdentities ?? [])
         legacyFavoriteIDs = Set(preferences.stringArray(forKey: "legacyFavoriteIDsV1") ?? (savedFavoriteIdentities == nil ? savedFavoriteIDs : []))
         format = InputFormat(rawValue: preferences.string(forKey: "inputFormat") ?? "") ?? .slash
-        soundEnabled = preferences.bool(forKey: "successSound")
+        soundVolume = PaletteSoundVolume.load(from: preferences)
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
@@ -496,13 +650,17 @@ final class CodexInserter: SkillInserting {
         }
     }
     func selectSound(_ enabled: Bool) {
-        soundEnabled = enabled
-        preferences.set(enabled, forKey: "successSound")
+        selectSoundVolume(enabled ? (soundEnabled ? soundVolume : .standard) : .off)
+    }
+    func selectSoundVolume(_ volume: PaletteSoundVolume) {
+        soundVolume = volume
+        preferences.set(volume.rawValue, forKey: PaletteSoundVolume.preferenceKey)
+        preferences.set(soundEnabled, forKey: "successSound")
     }
     func selectPinned(_ enabled: Bool) {
         pinned = enabled
         preferences.set(enabled, forKey: "alwaysOnTop")
-        panel?.level = enabled ? .floating : .normal
+        panel?.level = enabled || (inserting && panel?.isVisible == true) ? .floating : .normal
     }
     var filtered: [Skill] {
         let words = query.folding(options: [.caseInsensitive, .widthInsensitive], locale: .current).split(whereSeparator: \.isWhitespace).map(String.init)
@@ -575,13 +733,26 @@ final class CodexInserter: SkillInserting {
     private func paste(_ text: String, completion: @escaping (Result<Void, Error>) -> Void) {
         guard !inserting else { completion(.failure(InsertionError.busy)); return }
         inserting = true; error = false
-        let showPanelAfterwards = panel?.isVisible == true
+        let insertionPanel = panel
+        let keepPanelVisible = insertionPanel?.isVisible == true
+        // A normal-level panel is covered when the destination is activated,
+        // even with hidesOnDeactivate=false. Keep it above that activation for
+        // this insertion only; the saved pin preference is never changed.
+        if keepPanelVisible {
+            insertionPanel?.level = .floating
+            insertionPanel?.orderFrontRegardless()
+        }
         // Release the nonactivating panel's stolen keyboard focus, including
         // the search field, without hiding the palette. CodexInserter activates
         // and verifies the actual destination before posting Paste.
         panel?.makeFirstResponder(nil)
         panel?.resignKey()
-        inserter.insert(text) { [weak self] result in
+        inserter.insert(text, targetReady: {
+            // Activation can reorder a normal panel asynchronously. Reassert
+            // its position once the destination is active, without taking key
+            // focus away from the verified input application.
+            if keepPanelVisible && insertionPanel?.isVisible == true { insertionPanel?.orderFrontRegardless() }
+        }) { [weak self] result in
             guard let self else { return }
             self.inserting = false
             switch result {
@@ -589,7 +760,10 @@ final class CodexInserter: SkillInserting {
             case .failure(let failure): self.status = failure.localizedDescription; self.error = true
             }
             self.trusted = AXIsProcessTrusted()
-            if showPanelAfterwards { self.panel?.orderFrontRegardless() }
+            if keepPanelVisible {
+                insertionPanel?.level = self.pinned ? .floating : .normal
+                if insertionPanel?.isVisible == true { insertionPanel?.orderFrontRegardless() }
+            }
             completion(result)
         }
     }
@@ -769,6 +943,9 @@ final class PalettePanel: NSPanel {
         panel.title = "Skill Pallet"; panel.titlebarAppearsTransparent = true
         panel.backgroundColor = NSColor(srgbRed: 225/255, green: 190/255, blue: 127/255, alpha: 1)
         panel.level = model.pinned ? .floating : .normal; panel.hidesOnDeactivate = false; panel.isReleasedWhenClosed = false
+        // Chip arrivals are animated inside the content. Do not also animate
+        // the native frame when ordering the palette between applications.
+        panel.animationBehavior = .none
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.becomesKeyOnlyIfNeeded = true
         model.panel = panel
@@ -855,7 +1032,8 @@ final class PalettePanel: NSPanel {
 
 private final class InsertionVisibilityProbePanel: NSPanel {
     var hideCalls = 0, showCalls = 0, keyReleases = 0, focusReleases = 0
-    override var isVisible: Bool { true }
+    var shown = true
+    override var isVisible: Bool { shown }
     override func orderOut(_ sender: Any?) { hideCalls += 1 }
     override func orderFrontRegardless() { showCalls += 1 }
     override func resignKey() { keyReleases += 1 }
@@ -873,6 +1051,31 @@ func selfTest() {
     precondition(chooseEditor([focused]) == nil)
     let disabled = EditorInfo(role: "AXTextArea", label: "Work with Codex", identifier: "", enabled: false, visible: true, focused: true)
     precondition(chooseEditor([disabled]) == nil)
+    var activationCalls: [String] = []
+    let manualActivation = activateWebAccessibility { name in activationCalls.append(name); return .success }
+    precondition(manualActivation.manual == .success && manualActivation.enhanced == nil)
+    precondition(activationCalls == ["AXManualAccessibility"])
+    activationCalls = []
+    let enhancedActivation = activateWebAccessibility { name in
+        activationCalls.append(name)
+        return name == "AXManualAccessibility" ? .attributeUnsupported : .success
+    }
+    precondition(enhancedActivation.manual == .attributeUnsupported && enhancedActivation.enhanced == .success)
+    precondition(enhancedActivation.requestedEnhanced)
+    precondition(activationCalls == ["AXManualAccessibility", "AXEnhancedUserInterface"])
+    let appliedThenNotImplemented = activateWebAccessibility { name in
+        name == "AXManualAccessibility" ? .attributeUnsupported : .notImplemented
+    }
+    precondition(appliedThenNotImplemented.requestedEnhanced)
+    let rejectedActivation = activateWebAccessibility { _ in .attributeUnsupported }
+    precondition(rejectedActivation.manual == .attributeUnsupported && rejectedActivation.enhanced == .attributeUnsupported)
+    precondition(!rejectedActivation.requestedEnhanced)
+    let lookupNow = Date(timeIntervalSince1970: 100), lookupDeadline = Date(timeIntervalSince1970: 106)
+    precondition(shouldRetryEditorDiscovery(eligibleCount: 0, attempt: 0, now: lookupNow, deadline: lookupDeadline))
+    precondition(shouldRetryEditorDiscovery(eligibleCount: 0, attempt: 15, now: lookupNow.addingTimeInterval(2.3), deadline: lookupDeadline))
+    precondition(!shouldRetryEditorDiscovery(eligibleCount: 2, attempt: 0, now: lookupNow, deadline: lookupDeadline))
+    precondition(!shouldRetryEditorDiscovery(eligibleCount: 0, attempt: 30, now: lookupNow, deadline: lookupDeadline))
+    precondition(!shouldRetryEditorDiscovery(eligibleCount: 0, attempt: 1, now: lookupDeadline, deadline: lookupDeadline))
     let skill = Skill(id: "/tmp/a b/SKILL.md", name: "demo", summary: "", description: "", source: "", invocation: "tools:demo")
     precondition(InputFormat.slash.command(skill) == "/tools:demo ")
     precondition(InputFormat.dollar.command(skill) == "$tools:demo ")
@@ -892,6 +1095,24 @@ func selfTest() {
     precondition(insertionWasApplied(before: "\n", after: "$demo\n", insertion: "$demo ", location: 0))
     let placeholderValue = "Codex と一緒に作業を進める\n"
     precondition(placeholderValue.utf16.count == 17)
+    precondition(supportsComposerDecorationProfile("26.1021.31345"))
+    precondition(supportsComposerDecorationProfile("26.429.30905"))
+    precondition(!supportsComposerDecorationProfile("unknown"))
+    // A matching but stale decoration cannot override a real end caret.
+    precondition(composerInsertionSite(text: placeholderValue, characterCount: 17,
+        range: CFRange(location: 16, length: 0), end: 17, placeholderCandidate: true, allowEmptyDecoration: false) == .draft(16))
+    precondition(composerInsertionSite(text: placeholderValue, characterCount: 17,
+        range: CFRange(location: 0, length: 0), end: 17, placeholderCandidate: true, allowEmptyDecoration: false) == nil)
+    precondition(composerInsertionSite(text: placeholderValue, characterCount: 17,
+        range: CFRange(location: 0, length: 0), end: 17, placeholderCandidate: true, allowEmptyDecoration: true) == .emptyDecoration)
+    precondition(composerInsertionSite(text: placeholderValue, characterCount: 17,
+        range: CFRange(location: 1, length: 0), end: 17, placeholderCandidate: true, allowEmptyDecoration: true) == nil)
+    precondition(composerInsertionSite(text: placeholderValue, characterCount: 17,
+        range: CFRange(location: 0, length: 1), end: 17, placeholderCandidate: true, allowEmptyDecoration: true) == nil)
+    precondition(composerInsertionSite(text: placeholderValue, characterCount: 18,
+        range: CFRange(location: 0, length: 0), end: 17, placeholderCandidate: true, allowEmptyDecoration: true) == nil)
+    precondition(composerInsertionSite(text: placeholderValue, characterCount: 17,
+        range: CFRange(location: 0, length: 0), end: 17, placeholderCandidate: false, allowEmptyDecoration: true) == nil)
     precondition(isGeneratedComposerPlaceholder(placeholderValue, placeholder: "", decoratedEmptyParagraph: true, supportedProfile: true))
     precondition(!isGeneratedComposerPlaceholder(placeholderValue, placeholder: "", decoratedEmptyParagraph: false, supportedProfile: true))
     precondition(!isGeneratedComposerPlaceholder(placeholderValue, placeholder: "", decoratedEmptyParagraph: true, supportedProfile: false))
@@ -920,6 +1141,35 @@ func selfTest() {
     precondition(insertionCommand("/demo ", before: "下書き\n\n", location: 4) == "/demo ")
     precondition(insertionWasApplied(before: "下書き\n\n", after: "下書き\n/demo \n", insertion: "/demo ", location: 4))
     precondition(insertionWasApplied(before: "\n", after: "/demo \n", insertion: "/demo ", location: 0))
+    // Regression: the user-triggered paste reported before=1, insertion=49,
+    // after=49. The empty paragraph's AX terminator may disappear after Paste.
+    let longCommand = "/" + String(repeating: "a", count: 47) + " "
+    precondition(longCommand.utf16.count == 49)
+    precondition(!insertionWasApplied(before: "\n", after: longCommand, insertion: longCommand, location: 0))
+    precondition(insertionWasApplied(before: "\n", after: longCommand, insertion: longCommand, location: 0, allowsMissingStructuralLF: true))
+    precondition(insertionWasApplied(before: "\n", after: "/demo", insertion: "/demo ", location: 0, allowsMissingStructuralLF: true))
+    precondition(insertionWasApplied(before: "\n", after: "/demo\u{A0}", insertion: "/demo ", location: 0, allowsMissingStructuralLF: true))
+    precondition(insertionWasApplied(before: "draft\n", after: "draft /demo ", insertion: " /demo ", location: 5, allowsMissingStructuralLF: true))
+    precondition(insertionWasApplied(before: "draft\n", after: "draft \n/demo ", insertion: " /demo ", location: 5, allowsMissingStructuralLF: true))
+    precondition(insertionWasApplied(before: "draft\n", after: "draft\u{A0}\n/demo ", insertion: " /demo ", location: 5, allowsMissingStructuralLF: true))
+    precondition(insertionWasApplied(before: "draft\n", after: "draft \n/demo", insertion: " /demo ", location: 5, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: "draft\n", after: "draft\n /demo ", insertion: " /demo ", location: 5, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: "draft\n", after: "draft\n\n /demo ", insertion: " /demo ", location: 5, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: "draft\n", after: "draft\n /other ", insertion: " /demo ", location: 5, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: "\n", after: "\n/demo ", insertion: "/demo ", location: 0, allowsMissingStructuralLF: true))
+    precondition(insertionWasApplied(before: "draft\n", after: "draft\u{A0}/demo\u{A0}", insertion: " /demo ", location: 5, allowsMissingStructuralLF: true))
+    precondition(insertionWasApplied(before: "下書き\n\n", after: "下書き\n/demo ", insertion: "/demo ", location: 4, allowsMissingStructuralLF: true))
+    precondition(insertionWasApplied(before: "😀\n", after: "😀 /demo ", insertion: " /demo ", location: 2, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: "\n", after: "", insertion: "/demo ", location: 0, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: "\n", after: "/other ", insertion: "/demo ", location: 0, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: "\n", after: "/demo extra", insertion: "/demo ", location: 0, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: "\n", after: "/demo \n\n", insertion: "/demo ", location: 0, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: " draft\n", after: "draft /demo ", insertion: " /demo ", location: 6, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: "draft\n", after: "drift /demo ", insertion: " /demo ", location: 5, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: "draft\n\n", after: "draft/demo ", insertion: "/demo ", location: 6, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: "a b\n", after: "a\u{A0}b /demo ", insertion: " /demo ", location: 3, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: "draft\n", after: "draft /demo ", insertion: " /demo ", location: 6, allowsMissingStructuralLF: true))
+    precondition(!insertionWasApplied(before: "draft\nX", after: "draft /demo ", insertion: " /demo ", location: 5, allowsMissingStructuralLF: true))
     precondition(!insertionPointIsReady(text: "draftX", characterCount: 6, range: CFRange(location: 5, length: 0), end: 6))
     precondition(!insertionPointIsReady(text: "draft\n", characterCount: 6, range: CFRange(location: 4, length: 0), end: 6))
     precondition(!insertionPointIsReady(text: "draft\n", characterCount: 6, range: CFRange(location: 5, length: 1), end: 6))
@@ -956,8 +1206,9 @@ func selfTest() {
             var pending: ((Result<Void, Error>) -> Void)?
             var delayed = false
             var calls = 0
-            func insert(_ text: String, completion: @escaping (Result<Void, Error>) -> Void) {
+            func insert(_ text: String, targetReady: @escaping () -> Void, completion: @escaping (Result<Void, Error>) -> Void) {
                 calls += 1
+                targetReady()
                 if delayed { pending = completion } else { completion(result) }
             }
             func restoreClipboard() {}
@@ -965,6 +1216,28 @@ func selfTest() {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("skill-pallet-model-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let store = RecentUsageStore(fileURL: folder.appendingPathComponent("usage.json")), service = TestInserter()
+        let volumeSuiteName = "SkillPallet.SoundTest.\(UUID().uuidString)", volumePreferences = UserDefaults(suiteName: volumeSuiteName)!
+        defer { volumePreferences.removePersistentDomain(forName: volumeSuiteName) }
+        precondition(PaletteSoundVolume.load(from: volumePreferences) == .off)
+        volumePreferences.set(true, forKey: "successSound")
+        let volumeModel = PaletteModel(inserter: service, usageStore: store, refreshOnLaunch: false, preferences: volumePreferences)
+        precondition(volumeModel.soundVolume == .standard && volumeModel.soundEnabled)
+        volumeModel.selectSoundVolume(.loud)
+        let restoredVolume = PaletteModel(inserter: service, usageStore: store, refreshOnLaunch: false, preferences: volumePreferences)
+        precondition(restoredVolume.soundVolume == .loud && restoredVolume.soundEnabled)
+        precondition(volumePreferences.integer(forKey: PaletteSoundVolume.preferenceKey) == 2)
+        restoredVolume.selectSound(true); precondition(restoredVolume.soundVolume == .loud)
+        restoredVolume.selectSound(false)
+        precondition(!restoredVolume.soundEnabled && PaletteSoundVolume.load(from: volumePreferences) == .off)
+        volumePreferences.set(99, forKey: PaletteSoundVolume.preferenceKey)
+        precondition(PaletteSoundVolume.load(from: volumePreferences) == .off)
+        precondition(PaletteSoundVolume.off.next == .standard && PaletteSoundVolume.standard.next == .loud && PaletteSoundVolume.loud.next == .off)
+        for kind in ["hover", "collision", "startup", "success"] {
+            let standard = PaletteSoundPlayer.playbackLevel(kind: kind, volume: .standard, strength: 0.3)!
+            let loud = PaletteSoundPlayer.playbackLevel(kind: kind, volume: .loud, strength: 0.3)!
+            precondition(abs(loud - standard * 2) < 0.00001 && loud <= 1)
+            precondition(PaletteSoundPlayer.playbackLevel(kind: kind, volume: .off) == 0)
+        }
         let model = PaletteModel(inserter: service, usageStore: store, refreshOnLaunch: false)
         model.insert(skill)
         precondition(model.usageCounts[skill.usageKey] == 1)
@@ -989,21 +1262,54 @@ func selfTest() {
         pinModel.selectPinned(true); precondition(testPanel.level == .floating)
         // Exercise the actual insertion model without displaying a GUI or
         // sending any key. A delayed failure and success both keep the palette
-        // visible, release search focus, and preserve its normal window level.
+        // visible, release search focus, and restore its saved window level.
         let visiblePanel = InsertionVisibilityProbePanel(contentRect: NSRect(x: 0, y: 0, width: 100, height: 100), styleMask: [.titled, .nonactivatingPanel], backing: .buffered, defer: false)
         pinModel.panel = visiblePanel; pinModel.selectPinned(false)
         let oldCount = pinModel.usageCounts[skill.usageKey] ?? 0
         pinModel.insert(skill)
         precondition(pinModel.inserting && visiblePanel.hideCalls == 0)
+        precondition(visiblePanel.level == .floating && !pinModel.pinned)
+        precondition(!preferences.bool(forKey: "alwaysOnTop"))
         precondition(visiblePanel.keyReleases == 1 && visiblePanel.focusReleases == 1)
         service.pending?(.failure(InsertionError.unsupported)); service.pending = nil
-        precondition(!pinModel.inserting && pinModel.error && visiblePanel.showCalls == 1)
+        precondition(!pinModel.inserting && pinModel.error && visiblePanel.showCalls == 3)
         precondition(visiblePanel.level == .normal && visiblePanel.hideCalls == 0)
         precondition((pinModel.usageCounts[skill.usageKey] ?? 0) == oldCount)
         pinModel.insert(skill)
+        pinModel.selectPinned(true); pinModel.selectPinned(false)
+        precondition(visiblePanel.level == .floating && !pinModel.pinned)
         service.pending?(.success(())); service.pending = nil
-        precondition(!pinModel.inserting && visiblePanel.showCalls == 2 && visiblePanel.hideCalls == 0)
+        precondition(!pinModel.inserting && visiblePanel.showCalls == 6 && visiblePanel.hideCalls == 0)
         precondition(visiblePanel.level == .normal && !pinModel.pinned)
+
+        // Closing the panel deliberately during a pending insertion must not
+        // reopen it when the reply arrives. Its temporary level is released.
+        pinModel.insert(skill)
+        visiblePanel.shown = false
+        service.pending?(.failure(InsertionError.changed)); service.pending = nil
+        precondition(visiblePanel.showCalls == 8 && visiblePanel.level == .normal)
+        visiblePanel.shown = true
+        pinModel.selectPinned(true); pinModel.insert(skill)
+        service.pending?(.success(())); service.pending = nil
+        precondition(visiblePanel.level == .floating && pinModel.pinned)
+
+        // The corrected verification result must reach the normal success UI
+        // and persist exactly one use. No real application receives this input.
+        let verifiedService = TestInserter()
+        let verifiedCommand = InputFormat.slash.command(skill)
+        let verifiedLocation = insertionLocation(text: "\n", characterCount: 1,
+            range: CFRange(location: 0, length: 0), end: 1)!
+        let verified = insertionWasApplied(before: "\n", after: verifiedCommand, insertion: verifiedCommand,
+            location: verifiedLocation, allowsMissingStructuralLF: verifiedLocation == 0)
+        verifiedService.result = verified ? .success(()) : .failure(InsertionError.unconfirmed)
+        let verifiedStore = RecentUsageStore(fileURL: folder.appendingPathComponent("verified-usage.json"))
+        let verifiedModel = PaletteModel(inserter: verifiedService, usageStore: verifiedStore,
+            refreshOnLaunch: false, preferences: preferences)
+        verifiedModel.insert(skill)
+        precondition(!verifiedModel.error && !verifiedModel.inserting)
+        precondition(verifiedModel.status == "demo を入力欄に追加しました。")
+        precondition(verifiedModel.usageCounts[skill.usageKey] == 1 && verifiedService.calls == 1)
+        precondition(try! RecentUsageStore(fileURL: verifiedStore.fileURL).counts()[skill.usageKey] == 1)
 
         // Presentation sequences are independent of usage and the paste reply.
         // Use a fake destination: this test never interacts with Codex.
@@ -1032,10 +1338,13 @@ func selfTest() {
         precondition(replayModel.arrivalSequence == 5)
     }
     print("PASS: composer selection, invocation formats, draft-preserving verification, multi-item clipboard restoration, newer-copy preservation")
+    print("PASS: web accessibility falls back from unsupported Electron attribute to Chromium enhanced mode; lookup tolerates delayed activation and remains bounded")
     print("PASS: successful insertions persist once; failures and busy clicks do not increment; recreated store restores usage")
+    print("PASS: audio migrates legacy ON/OFF, saves three volume levels, restores loud after restart and doubles gain without changing impact strength")
     print("PASS: pin switches real window levels and persists across model recreation")
     print("PASS: structural final LF append preserves draft, line breaks, Unicode and verification; non-end/selected/mismatched ranges are rejected")
-    print("PASS: insertion never orders palette out, releases search/key focus, restores front order on success/failure and respects pin OFF")
+    print("PASS: verified caret permits omitted AX paragraph LF after Paste; existing draft, user line breaks and exact command remain required; success UI and usage persist once")
+    print("PASS: insertion holds visible panel above target activation, restores saved pin level on success/failure, and never reopens a panel closed during insertion")
     print("PASS: launch, reopen and completed catalog request replay arrivals once; focus, busy clicks, pin, mute and usage do not replay")
 }
 

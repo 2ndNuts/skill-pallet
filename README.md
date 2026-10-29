@@ -4,18 +4,20 @@
 
 Codexと並べて使う、Mac用のスキルランチャー。木製のチップからスキルを選ぶと、現在のチャットの入力欄へ追記します。
 
-[ソースコード](https://github.com/2ndNuts/skill-pallet)はこのリポジトリで公開しています。アプリと利用資料は、配布専用の公開リポジトリ [skill-pallet-releases](https://github.com/2ndNuts/skill-pallet-releases) で提供しています。**[0.3.6 Beta 1の配布先](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.6-beta.1)**
+[ソースコード](https://github.com/2ndNuts/skill-pallet)はこのリポジトリで公開しています。アプリと利用資料は、配布専用の公開リポジトリ [skill-pallet-releases](https://github.com/2ndNuts/skill-pallet-releases) で提供しています。**[0.3.16 Beta 1の配布先](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.16-beta.1)**
 
 ベータ版はDeveloper ID署名・Appleの公証を受けていません。利用者による初回起動の個別許可が必要です。別のMacでの初回起動確認は未完了です。
 
 ## 機能
 
 - 4列の木製チップ、ジャンルと日本語検索、関連スキルのスタック。
+- 7ジャンルの色を、チップの縁・ジャンルボタン・概要の印へ統一。絞り込みに合わせて切り替え。
+- 横フリックやジャンルボタンで、木のトレーごと200msで切り替え。縦スクロールではチップの一覧を移動。
 - マウスオーバーで概要を表示。Option＋クリックでお気に入りを保存。
 - 直近30日の使用回数に応じて、スキルごとに木の色が5段階で変化。
 - 個別の慣性・摩擦・衝突。スクロールやウィンドウ移動の接触に木の音が連動。
 - 起動・再表示・更新操作で、右下から左上へチップが整列。
-- 操作音と最前面への固定を切り替え、設定を保存。
+- 操作音はOFF・標準・大の3段階。最前面への固定とともに設定を保存。
 
 ## 対応環境
 
@@ -69,6 +71,15 @@ python3 -m http.server 8794 --bind 127.0.0.1 --directory ui
 - [公開用の利用ガイド](distribution/public/README.md)
 - [ビルドと配布](docs/DISTRIBUTION.md)
 - [第三者素材のクレジット](THIRD_PARTY_NOTICES.md)
+- [0.3.16のトレー切り替え](docs/releases/0.3.16.md)
+- [0.3.15の横フリック](docs/releases/0.3.15.md)
+- [0.3.14のジャンル7色](docs/releases/0.3.14.md)
+- [0.3.13の音量3段階](docs/releases/0.3.13.md)
+- [0.3.12の空欄への追記と押下反応の修正](docs/releases/0.3.12.md)
+- [0.3.11の押下反応の改善](docs/releases/0.3.11.md)
+- [0.3.10の入力速度とウィンドウ表示の修正](docs/releases/0.3.10.md)
+- [0.3.9の入力欄検出の修正](docs/releases/0.3.9.md)
+- [0.3.7の入力結果確認の修正](docs/releases/0.3.7.md)
 - [0.3.6の変更と検証状況](docs/releases/0.3.6.md)
 
 ## ライセンス

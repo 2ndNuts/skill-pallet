@@ -1,4 +1,5 @@
-export const GENRE_NAMES={audio:'音',video:'映像',image:'画像',ui:'UI・Web',words:'調査・文章',data:'資料・データ',organize:'整理・連携'};
+import {GENRE_NAMES} from '../shared/genre-palette.js';
+export {GENRE_NAMES};
 export const FAMILIES=[
   {id:'figma',name:'Figma',test:s=>s.name.startsWith('figma-')},
   {id:'taste',name:'Taste',test:s=>s.name.split('-').includes('taste')},

@@ -1,8 +1,8 @@
 # 未公証版のインストール
 
-公開ベータ版は [2ndNuts/skill-pallet-releases](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.6-beta.1) から入手できます。利用者向けの手順は[公開ガイド](https://github.com/2ndNuts/skill-pallet-releases/blob/main/INSTALL.md)を参照してください。
+公開ベータ版は [2ndNuts/skill-pallet-releases](https://github.com/2ndNuts/skill-pallet-releases/releases/tag/v0.3.16-beta.1) から入手できます。利用者向けの手順は[公開ガイド](https://github.com/2ndNuts/skill-pallet-releases/blob/main/INSTALL.md)を参照してください。
 
-以下は、非公開の開発スナップショット `0.3.6-dev.1` を扱う場合の手順です。
+以下は、非公開の開発スナップショット `0.3.16-dev.1` を扱う場合の手順です。
 
 対象：Apple Silicon搭載Mac、macOS 14以降、Codexデスクトップアプリ。
 
@@ -10,7 +10,7 @@
 
 ## ダウンロード
 
-1. `2ndNuts/skill-pallet` のReleaseから `Skill-Pallet-0.3.6-arm64-development.zip` と `SHA256SUMS.txt` を入手します。
+1. `2ndNuts/skill-pallet` のReleaseから `Skill-Pallet-0.3.16-arm64-development.zip` と `SHA256SUMS.txt` を入手します。
 2. 必要に応じてZIPのSHA-256を添付のチェックサムと照合します。
 3. ZIPを展開し、`Skill Pallet.app` を「アプリケーション」フォルダへ移します。
 

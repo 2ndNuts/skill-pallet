@@ -2,6 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSoundCadence,COLLISION_SOUND} from './sound-cadence.js';
 import {createUISound,soundLevel} from './ui-audio.js';
+import {SOUND_VOLUMES,volumeFromState,nextSoundVolume} from './sound-volume.js';
+
+test('volume has one louder step above the existing level and legacy ON keeps its level',()=>{
+  assert.deepEqual(SOUND_VOLUMES.map(level=>level.label),['OFF','標準','大']);
+  assert.deepEqual([0,1,2].map(nextSoundVolume),[1,2,0]);
+  assert.equal(volumeFromState({sound:true}),1);assert.equal(volumeFromState({sound:false}),0);
+  assert.equal(volumeFromState({sound:true,soundVolume:2}),2);
+  assert.equal(volumeFromState({sound:true,soundVolume:99}),1);
+  for(const kind of ['hover','collision','startup','success'])for(const strength of [0,.3,1]){
+    assert.equal(soundLevel(kind,strength,0),0);
+    assert.equal(soundLevel(kind,strength,2),2*soundLevel(kind,strength,1));
+    assert.ok(soundLevel(kind,strength,2)<=1);
+  }
+});
 function fixture(){
   let now=0;const events=[];const sound=createSoundCadence((kind,take,strength)=>events.push({kind,take,strength,now}));sound.setEnabled(true);
   return{sound,events,frame(t,contacts=[],active=true,elapsed=16){now=t;return sound.collisionFrame(contacts,t,elapsed,active);}};
@@ -41,7 +55,7 @@ test('OFF never emits contacts and native playback receives the collision streng
   try{
     const events=[],sound=createUISound({native:true,sendNative:(kind,take,strength)=>events.push({kind,take,strength})});
     sound.collisionFrame([hit(0)],0,16,true);assert.equal(events.length,0);
-    sound.setEnabled(true);sound.collisionFrame([hit(200)],200,16,true);
+    sound.setVolume(2);sound.collisionFrame([hit(200)],200,16,true);
     assert.equal(events.length,1);assert.equal(events[0].kind,'collision');assert.ok(events[0].strength>0&&events[0].strength<=1);
     sound.setEnabled(false);sound.collisionFrame([hit(400)],400,16,true);assert.equal(events.length,1);
   }finally{globalThis.document=original;}
@@ -63,6 +77,11 @@ test('natural wood tails stay within two voices and mute stops active audio',()=
     }
     assert.ok(played.length>=10);assert.equal(maxVoices,2);
     assert.ok(played.every(e=>e.url.includes('scroll-')&&e.volume>0&&e.volume<=soundLevel('collision',1)));
+    const active=FakeAudio.all.filter(a=>!a.paused&&!a.ended),before=active.map(a=>a.volume),playCount=played.length;
+    assert.ok(active.length>0);sound.setVolume(2);
+    assert.deepEqual(active.map(a=>a.volume),before.map(level=>level*2));
+    assert.equal(played.length,playCount,'changing volume must not start or duplicate a contact');
+    sound.setEnabled(true);assert.deepEqual(active.map(a=>a.volume),before.map(level=>level*2));
     sound.setEnabled(false);assert.ok(FakeAudio.all.every(a=>a.paused));
   }finally{globalThis.Audio=original.Audio;globalThis.document=original.document;}
 });

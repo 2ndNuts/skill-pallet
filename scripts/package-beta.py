@@ -14,7 +14,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_FILES = (
     "README.md", "INSTALL.md", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md",
-    "assets/lockup.svg", "licenses/three-MIT.txt",
+    "assets/lockup.svg", "licenses/three-MIT.txt", "LICENSE",
 )
 
 

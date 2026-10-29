@@ -1,4 +1,5 @@
 import {createPreviewUsage,PREVIEW_USAGE_KEY,usageIdentity} from './usage-model.js';
+import {PREVIEW_SOUND_VOLUME_KEY,SOUND_VOLUMES,soundVolume} from './sound-volume.js';
 
 export function nativeCatalog(skills,metadata=[]){
   const exact=new Map(metadata.map(s=>[usageIdentity(s),s]));
@@ -44,10 +45,20 @@ export async function createRuntime(){
       preview=createPreviewUsage({storage:window.localStorage,lock:fn=>navigator.locks?navigator.locks.request('skill-pallet-preview-usage',fn):fn()});
       current={skills,usage:preview.snapshot(),usageError:''};
     }catch(error){current={skills,usage:{windowDays:30,counts:{}},usageError:'使用回数を保存できません。ブラウザの保存設定を確認してください。'};}
+    let previewVolume=0;
+    try{previewVolume=soundVolume(JSON.parse(window.localStorage.getItem(PREVIEW_SOUND_VOLUME_KEY))).value;}catch{}
+    current={...current,sound:previewVolume>0,soundVolume:previewVolume};
     window.addEventListener('storage',event=>{if(event.key===PREVIEW_USAGE_KEY||event.key===null)refreshUsage();});
     window.addEventListener('focus',refreshUsage);
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshUsage();});
     setInterval(refreshUsage,60_000);
+  }
+  function setSoundVolume(value){
+    if(!SOUND_VOLUMES.some(level=>level.value===value))return Promise.reject(new Error('音量の設定が正しくありません。'));
+    if(isNative)return request('soundVolume',{value});
+    try{window.localStorage.setItem(PREVIEW_SOUND_VOLUME_KEY,JSON.stringify(value));}
+    catch{return Promise.reject(new Error('音量の設定を保存できませんでした。'));}
+    return Promise.resolve(publish({...current,sound:value>0,soundVolume:value}));
   }
   return{
     native:isNative,get state(){return current;},subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
@@ -62,7 +73,8 @@ export async function createRuntime(){
     permission(){return request('permission');},
     updateCatalog(){return request('updateCatalog');},
     refresh(){return request('refresh');},
-    sound(value){return request('sound',{value});},
+    sound(value){return isNative?request('sound',{value}):setSoundVolume(value?(current.soundVolume||1):0);},
+    soundVolume:setSoundVolume,
     pin(value){return request('pin',{value});},
     soundCue(kind,take,strength=1){if(isNative&&current.sound)handler.postMessage({action:'soundCue',kind,take,strength}).catch(()=>{});}
   };
